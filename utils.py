@@ -40,4 +40,4 @@ def plot_spike_regions(file_path, variable_name, interval_length=100, threshold_
 def plot_ground_truth(file_path):
     pass
 
-plot_spike_regions('Unsupervised-Team-8/sample_1.mat', 'data', interval_length=100, threshold_factor=2)
+# plot_spike_regions('Unsupervised-Team-8/sample_1.mat', 'data', interval_length=100, threshold_factor=2)
