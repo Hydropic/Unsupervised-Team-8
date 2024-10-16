@@ -62,11 +62,27 @@ def Create_spikeArray(dataset, interval_start, interval_length, update_interval)
     data_array = data_array.flatten()
     return data_array
 
-def plot(result_array):
+def plot(mat_file,result_array): # Borrowed some code from JetteJarl :d -- To compare results with the informationthat was given
+    colors = ['r', 'm', 'y']
+    plt.plot(result_array)
+    spike_times = mat_file['spike_times'][0][0][0]
+    spike_class = mat_file['spike_class'][0][0][0]
+
+    for spike, class_label in zip(spike_times, spike_class):
+        if spike <= len(result):
+            plt.axvline(x=spike, color=colors[class_label])
+
+    plt.xlabel('Sample Index')  # Label for the x-axis
+    plt.ylabel('Value')   
+    plt.show()
+
+###OLD VERSION###
+"""def plot(result_array):
     plt.plot(result_array)
     plt.xlabel('Sample Index')  # Label for the x-axis
     plt.ylabel('Value')   
     plt.show()
+    """
 
 ############################################################
 
