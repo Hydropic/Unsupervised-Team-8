@@ -2,10 +2,10 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 import scipy.io
 import matplotlib.pyplot as plt
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Dense, LSTM, RepeatVector, TimeDistributed
 import time
-__path__ = 'Datasets/sample_1' 
+from sklearn.model_selection import ParameterGrid
+
+__path__ = 'Unsupervised-Team-8/Datasets/sample_1.mat' 
 def load_mat_file(file_path):
     mat = scipy.io.loadmat(file_path)
 
@@ -141,9 +141,61 @@ threshold = np.percentile(weighted_outlier_scores, 80)
 spike_indices = np.where(weighted_outlier_scores > threshold)[0]"""
 
 
+param_grid = {
+    "n_neighbors": list(range(1, 801, 10)),
+    "confidence_threshold" : [0,1,2,3,4,5,6, 7, 8, 9, 10,11,12,13,14,15]
+}
 
+best_score = float('-inf')
+best_params = None
 
-lof = LocalOutlierFactor(n_neighbors=45)
+"""# Perform grid search
+for params in ParameterGrid(param_grid):
+    lof = LocalOutlierFactor(n_neighbors=params['n_neighbors'])
+    outlier_scores = lof.fit_predict(data_points)
+    spike_indices = np.where(outlier_scores == -1)[0]
+    confidence_threshold = params['confidence_threshold']
+
+    # Group consecutive indices
+    groups = []
+    current_group = [spike_indices[0]]
+
+    for i in range(1, len(spike_indices)):
+        if spike_indices[i] == spike_indices[i - 1] + 1:
+            current_group.append(spike_indices[i])
+        else:
+            groups.append(current_group)
+            current_group = [spike_indices[i]]
+    groups.append(current_group)
+
+    # Filter groups based on confidence and get middle indices
+    filtered_middle_indices = []
+
+    for group in groups:
+        confidence = len(group)
+        if confidence >= confidence_threshold:
+            middle_index = group[len(group) // 2]
+            filtered_middle_indices.append(middle_index)
+
+    spike_times = mat_file['spike_times'][0][0][0]
+
+    # See how many spikes are detected also accept detected spikes that are near the ground truth
+    score = 0
+    for spike in spike_times:
+        for detected_spike in filtered_middle_indices:
+            if abs(spike - detected_spike) <= 50:
+                print(abs(spike-detected_spike))
+                score += 1
+                break
+
+    if score > best_score:
+        best_score = score
+        best_params = params
+"""
+print(f"Best Parameters: {best_params}")
+print(f"Best Score: {best_score}")
+
+lof = LocalOutlierFactor(n_neighbors=50)
 outlier_scores = lof.fit_predict(data_points)
 
 """# Iterate through the outliers array
@@ -161,7 +213,37 @@ for i in range(len(outlier_scores)):
 ################### REDUCE SERIAL DETECTIONS INTO ONE #####################
 
 ###########################################################################
+print(outlier_scores)
 spike_indices = np.where(outlier_scores == -1)[0]
+print(spike_indices)
+
+# Define the confidence threshold
+confidence_threshold = 1
+
+# Group consecutive indices
+groups = []
+current_group = [spike_indices[0]]
+
+for i in range(1, len(spike_indices)):
+    if spike_indices[i] <= spike_indices[i - 1] + 20:
+        current_group.append(spike_indices[i])
+    else:
+        groups.append(current_group)
+        current_group = [spike_indices[i]]
+groups.append(current_group)
+
+# Filter groups based on confidence and get middle indices
+filtered_middle_indices = []
+
+for group in groups:
+    confidence = len(group)
+    if confidence >= confidence_threshold:
+        middle_index = group[len(group) // 2]
+        filtered_middle_indices.append(middle_index)
+
+print(filtered_middle_indices)
+
+spike_indices = filtered_middle_indices
 ##### APPLY FOURIER TRANSFORM #####
 
 # Plot signal and detected spikes
