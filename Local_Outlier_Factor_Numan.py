@@ -272,8 +272,39 @@ def count_fn_fp(ground_truth, predictions, tolerance=40):
     
     return false_negative, false_positive, true_positive
 
+
+def fast_count_fp_fn_tp(ground_truth, predictions, tolerance=40):
+    predictions = np.sort(predictions)  # Ensure sorted for easier traversal
+    ground_truth = np.sort(ground_truth)
+    
+    tp, fp, fn = 0, 0, 0
+    i, j = 0, 0
+
+    while i < len(predictions) and j < len(ground_truth):
+        if abs(predictions[i] - ground_truth[j]) <= tolerance:
+            # True Positive: Match found within the window range
+            tp += 1
+            i += 1
+            j += 1
+        elif predictions[i] < ground_truth[j]:
+            # False Positive: Prediction with no matching ground truth within window
+            fp += 1
+            i += 1
+        else:
+            # False Negative: Ground truth with no matching prediction within window
+            fn += 1
+            j += 1
+
+    # Remaining unmatched predictions and ground truths
+    fp += len(predictions) - i
+    fn += len(ground_truth) - j
+
+    print(f"False Negatives: {fn}, False Positives: {fp}, True Positives: {tp}")
+    return fp, fn, tp
+   
+
 # Example usage
-fn, fp, tp = count_fn_fp(mat_file['spike_times'][0][0][0], spike_indices, tolerance=50)
+fn, fp, tp = fast_count_fp_fn_tp(mat_file['spike_times'][0][0][0], spike_indices, 40)
 
 threshold_param = 2.7
 left_interval = 30
