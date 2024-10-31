@@ -174,7 +174,7 @@ def Merge_detections(data ,detect_start, detect_stop, window_size):
         start_time = time.time()
         temp_data = data[detect_start+(j-1)*window_size:detect_start+(j)*window_size]
         data_points = temp_data.reshape(-1, 1)
-        lof = LocalOutlierFactor(n_neighbors=140)  # standard value for window_size 10000 is 45
+        lof = LocalOutlierFactor(n_neighbors=301)  # standard value for window_size 10000 is 45
         temp_outlier_scores = lof.fit_predict(data_points)
         for i in range(len(temp_outlier_scores)):
             if temp_outlier_scores[i] == -1:  # Check if current point is an outlier
@@ -195,7 +195,7 @@ def Merge_detections(data ,detect_start, detect_stop, window_size):
 
 low_bound = 0
 up_bound = len(eeg_signal_total)
-window_size = 848#10000    ### 848 windowsize retrieved by maximizing tp (n_neighbours = 140) and z_score threshold of 3.0###
+window_size = 1500#10000    ### 848 windowsize retrieved by maximizing tp (n_neighbours = 140) and z_score threshold of 3.0###
 eeg_signal = Create_spikeArray(eeg_signal_total,low_bound,up_bound-low_bound,1000)
 eeg_signal = scaler.fit_transform(eeg_signal.reshape(-1, 1)).flatten()
 data_points = eeg_signal.reshape(-1, 1)
@@ -275,4 +275,38 @@ def count_fn_fp(ground_truth, predictions, tolerance=40):
 # Example usage
 fn, fp, tp = count_fn_fp(mat_file['spike_times'][0][0][0], spike_indices, tolerance=50)
 
+threshold_param = 2.7
+left_interval = 30
+right_interval = 20
+
+# data
+data = mat_file['data'][0]
+spike_times = mat_file['spike_times'][0][0][0]
+
+
+# mean and stdv
+mean = np.mean(data, axis=0)
+std_dev = np.std(data, axis=0)
+
+
+detected_spikes = []
+
+for t in spike_indices:
+    spike = data[t-left_interval:t+right_interval]
+    detected_spikes.append(spike)
+
+#detected_spikes = np.array(detected_spikes)
+
+covariance = np.cov(detected_spikes, rowvar=False)
+fig, ax = plt.subplots(nrows=1, ncols=1)
+plt.imshow(covariance)
+plt.show()
+
+eigenvalues, eigenvectors = np.linalg.eig(covariance)
+eigenvalues = np.sort(eigenvalues)[::-1]
+print(eigenvalues)
+
+plt.plot(np.linspace(1, len(eigenvalues), num=len(eigenvalues)), eigenvalues)
+
+plt.show()
 #print(np.shape(outliers))
