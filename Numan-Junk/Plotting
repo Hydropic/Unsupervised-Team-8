@@ -5,7 +5,7 @@ import pandas as pd # To check the Keys etc.
 from sklearn.decomposition import FastICA
 from sklearn.preprocessing import StandardScaler
 
-__path__ = 'Unsupervised-Team-8/problem-2/data/test-data/002.mat'
+__path__ = 'Unsupervised-Team-8/problem-2/data/test-data/001'
 
 normalizer = StandardScaler()
 
@@ -53,7 +53,7 @@ for i, channel in enumerate([channel_1, channel_2, channel_3, channel_4], start=
     plt.xlabel("Time")
     plt.ylabel("Amplitude")
 
-plt.tight_layout()
+#plt.tight_layout()
 #plt.show()
 
 mat_file = load_mat_file(__path__)
@@ -77,7 +77,7 @@ for i in range(0, 4):
 
 ax[0].set_title('ICA Components from 000.mat (Test data)')
 
-plt.tight_layout()
+#plt.tight_layout()
 #plt.show()
 
 
@@ -101,5 +101,39 @@ for i in range(0, 4):
 ax[0].set_title('FFT of ICA Components from 000.mat (Test data)')
 
 plt.tight_layout()
-plt.show()
 
+"""
+for i in range(4):
+    middle_index = len(frequencies) // 2
+    low_freqs = np.abs(fft_results[i, :middle_index])
+    high_freqs = np.abs(fft_results[i, middle_index:]) 
+
+    
+    # Add up the values and print
+    print(f"Sum of frequency components for channel {i}: {np.sum(low_freqs) - np.sum(high_freqs)}")
+  
+
+"""
+# Divide FFT results from the middle
+
+# Apply weighting to focus more on past neighbors (exponentially decay the scores)
+weight_decay_factor = 0.95
+reversed_weight_decay_factor = 1 / weight_decay_factor
+
+
+
+for i in range(4):
+    middle_index = len(frequencies) // 2
+    low_freqs = np.abs(fft_results[i, :middle_index])
+    high_freqs = np.abs(fft_results[i, middle_index:]) 
+    weights = np.array([weight_decay_factor**i for i in range(len(low_freqs))])
+    reversed_weights = np.array([reversed_weight_decay_factor**(i-len(low_freqs)) for i in range(len(high_freqs))])
+    weighted_low_freqs = low_freqs * weights
+    weighted_high_freqs = high_freqs * reversed_weights
+    
+    # Add up the values and print
+    print(f"Sum of frequency components for channel {i}: {np.sum(weighted_low_freqs) - np.sum(weighted_high_freqs)}")
+
+#print(len(frequencies))
+
+plt.show()
