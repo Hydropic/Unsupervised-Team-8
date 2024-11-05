@@ -1,0 +1,7 @@
+a11m 4 1000 60000
+a11m.mat 16+192 10/uV 12 0 40 32282 0 AECG1
+a11m.mat 16+192 10/uV 12 0 -15 32472 0 AECG2
+a11m.mat 16+192 10/uV 12 0 -18 -16537 0 AECG3
+a11m.mat 16+192 10/uV 12 0 5 11269 0 AECG4
+#Creator: wfdb2mat
+#Source: record a11

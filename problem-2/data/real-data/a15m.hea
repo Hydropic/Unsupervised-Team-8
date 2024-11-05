@@ -1,0 +1,7 @@
+a15m 4 1000 60000
+a15m.mat 16+192 10/uV 12 0 5 27126 0 AECG1
+a15m.mat 16+192 10/uV 12 0 -16 13671 0 AECG2
+a15m.mat 16+192 10/uV 12 0 -98 -19570 0 AECG3
+a15m.mat 16+192 10/uV 12 0 -150 -7767 0 AECG4
+#Creator: wfdb2mat
+#Source: record a15

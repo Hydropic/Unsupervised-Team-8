@@ -1,0 +1,7 @@
+a21m 4 1000 60000
+a21m.mat 16+192 10/uV 12 0 -26 -8569 0 AECG1
+a21m.mat 16+192 10/uV 12 0 -21 6766 0 AECG2
+a21m.mat 16+192 10/uV 12 0 28 -20241 0 AECG3
+a21m.mat 16+192 10/uV 12 0 -52 -516 0 AECG4
+#Creator: wfdb2mat
+#Source: record a21

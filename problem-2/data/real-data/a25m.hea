@@ -1,0 +1,7 @@
+a25m 4 1000 60000
+a25m.mat 16+192 10/uV 12 0 207 -21054 0 AECG1
+a25m.mat 16+192 10/uV 12 0 -236 -20102 0 AECG2
+a25m.mat 16+192 10/uV 12 0 -14 30379 0 AECG3
+a25m.mat 16+192 10/uV 12 0 -185 13049 0 AECG4
+#Creator: wfdb2mat
+#Source: record a25

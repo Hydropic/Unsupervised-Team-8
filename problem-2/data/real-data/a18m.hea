@@ -1,0 +1,7 @@
+a18m 4 1000 60000
+a18m.mat 16+192 10/uV 12 0 58 -15779 0 AECG1
+a18m.mat 16+192 10/uV 12 0 -12 24094 0 AECG2
+a18m.mat 16+192 10/uV 12 0 -53 -24850 0 AECG3
+a18m.mat 16+192 10/uV 12 0 -42 24874 0 AECG4
+#Creator: wfdb2mat
+#Source: record a18

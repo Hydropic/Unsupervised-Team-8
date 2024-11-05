@@ -1,0 +1,7 @@
+a24m 4 1000 60000
+a24m.mat 16+192 10/uV 12 0 165 -29837 0 AECG1
+a24m.mat 16+192 10/uV 12 0 -55 -7090 0 AECG2
+a24m.mat 16+192 10/uV 12 0 221 23064 0 AECG3
+a24m.mat 16+192 10/uV 12 0 21 4896 0 AECG4
+#Creator: wfdb2mat
+#Source: record a24

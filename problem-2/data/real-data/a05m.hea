@@ -1,0 +1,7 @@
+a05m 4 1000 60000
+a05m.mat 16+192 10/uV 12 0 -89 15720 0 AECG1
+a05m.mat 16+192 10/uV 12 0 133 29988 0 AECG2
+a05m.mat 16+192 10/uV 12 0 220 2922 0 AECG3
+a05m.mat 16+192 10/uV 12 0 325 13911 0 AECG4
+#Creator: wfdb2mat
+#Source: record a05
