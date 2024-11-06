@@ -43,9 +43,8 @@ channel_3 =  data[0, 2, :]
 channel_4 =  data[0, 3, :]
 
 
-import matplotlib.pyplot as plt
 
-plt.figure(figsize=(10, 8))
+#plt.figure(figsize=(10, 8))
 for i, channel in enumerate([channel_1, channel_2, channel_3, channel_4], start=1):
     plt.subplot(4, 1, i)
     plt.plot(channel)
@@ -117,12 +116,13 @@ for i in range(4):
 # Divide FFT results from the middle
 
 # Apply weighting to focus more on past neighbors (exponentially decay the scores)
-weight_decay_factor = 0.95
+weight_decay_factor = 0.9
 reversed_weight_decay_factor = 1 / weight_decay_factor
 
 
-
+Sum_of_frequency = []
 for i in range(4):
+
     middle_index = len(frequencies) // 2
     low_freqs = np.abs(fft_results[i, :middle_index])
     high_freqs = np.abs(fft_results[i, middle_index:]) 
@@ -130,10 +130,23 @@ for i in range(4):
     reversed_weights = np.array([reversed_weight_decay_factor**(i-len(low_freqs)) for i in range(len(high_freqs))])
     weighted_low_freqs = low_freqs * weights
     weighted_high_freqs = high_freqs * reversed_weights
-    
+    temp_sum = np.sum(weighted_low_freqs) - np.sum(weighted_high_freqs)
+    Sum_of_frequency.append(temp_sum)
     # Add up the values and print
-    print(f"Sum of frequency components for channel {i}: {np.sum(weighted_low_freqs) - np.sum(weighted_high_freqs)}")
+    print(f"Sum of frequency components for channel {i}: {Sum_of_frequency[i]}")
 
 #print(len(frequencies))
+
+min_diff = float('inf')
+min_indices = None
+for i in range(4):
+    for j in range(4):
+        if i!=j: 
+            diff = abs(abs(Sum_of_frequency[i])-abs(Sum_of_frequency[j]))
+            if diff < min_diff:
+                min_diff = diff
+                min_indices = (i, j)
+print(f"Minimum difference is {min_diff} at indices {min_indices}")
+
 
 plt.show()
