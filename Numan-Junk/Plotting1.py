@@ -118,9 +118,11 @@ print(f"Max index: {max_index}, 2nd Max index: {max_index2}")
 
 batch_size = 5
 
+# Initialize heartbeat_mixed to store two components (max_index and max_index2) for each file
+# with each time series component having the length of the original data (1500)
+heartbeat_mixed = np.empty((2, 153), dtype=object)
+
 for i in range(0, 153, batch_size):
-    max_index = 0
-    max_index2 = 0
     fig, ax = plt.subplots(batch_size, 2, figsize=(15, 20))
     
     for batch_idx, j in enumerate(range(i, min(i + batch_size, 153))):
@@ -139,14 +141,17 @@ for i in range(0, 153, batch_size):
         # Analyze FFT to find max components
         max_index, max_index2 = Analyse_FFT_Result()
 
+        # Store max components in heartbeat_mixed array
+        heartbeat_mixed[0, j] = ica_components[max_index, :]
+        heartbeat_mixed[1, j] = ica_components[max_index2, :]
 
         # Plot ICA components with max_index and max_index2 for the current file
-        ax[batch_idx, 0].plot(x, ica_components[max_index, :], color='blue')
+        ax[batch_idx, 0].plot(x, heartbeat_mixed[0, j], color='blue')
         ax[batch_idx, 0].set_title(f'ICA Max Component {batch_idx+1} for File {j:03}')
         ax[batch_idx, 0].set_xlabel('Time')
         ax[batch_idx, 0].set_ylabel('Amplitude')
 
-        ax[batch_idx, 1].plot(x, ica_components[max_index2, :], color='red')
+        ax[batch_idx, 1].plot(x, heartbeat_mixed[1, j], color='red')
         ax[batch_idx, 1].set_title(f'ICA 2nd Max Component {batch_idx+1} for File {j:03}')
         ax[batch_idx, 1].set_xlabel('Time')
         ax[batch_idx, 1].set_ylabel('Amplitude')
@@ -154,5 +159,6 @@ for i in range(0, 153, batch_size):
     plt.tight_layout()
     plt.show()
     print(f"Batch starting at index {i}: Max index: {max_index}, 2nd Max index: {max_index2}")
+
 
 #plt.show()
