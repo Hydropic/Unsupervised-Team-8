@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd # To check the Keys etc.
 from sklearn.decomposition import FastICA
 from sklearn.preprocessing import StandardScaler
+from mne import 
 
 __path__ = 'Unsupervised-Team-8/problem-2/data/test-data/011'
 
@@ -18,6 +19,41 @@ def flatten(arr,variable):
     data = arr[variable]
     data= data.flatten()
     return data
+
+def get_mean_std(signal):
+    mean = float(np.mean(signal))
+    std_dev = float(np.std(signal))
+    return mean, std_dev
+
+def calculate_zScore(x,mean, std_dev):
+
+    z_score = float((x-mean)/std_dev)
+    return z_score
+
+def Check_Spikes(a, threshold,mean, std_dev): # Sets 0 if under the threshold 
+    temp_zScore = calculate_zScore(a,mean, std_dev)
+    if abs(temp_zScore) >= threshold:
+        return a
+    elif temp_zScore < threshold:
+        return 0
+
+def fix_signal_shape(data_array):
+    temp_data = []
+
+    temp_mean, temp_std = get_mean_std(data_array)
+    
+    for i in range(data_array.size):
+        temp_data.append(Check_Spikes(data_array[i], 2.0, temp_mean, temp_std))
+
+    # Calculate the mean of the processed data
+    channel_mean = np.mean(temp_data, dtype=np.float64)
+    
+
+    if channel_mean < 0:
+        data_array = -data_array
+    
+    return data_array
+
 
 sample_1 = load_mat_file(__path__)
 
@@ -64,6 +100,7 @@ print(data00.shape)
 # Perform ICA
 ica = FastICA(n_components=4)
 ica_components = ica.fit_transform(data00.T).T
+#ica_components = normalizer.fit_transform(ica_components)
 
 
 # Perform FFT on ICA results
@@ -75,6 +112,7 @@ n = ica_components.shape[1]
 frequencies = np.fft.fftfreq(n)
 
 # Plot the FFT results
+
 
 
 def Analyse_FFT_Result():
@@ -142,19 +180,19 @@ for i in range(0, 153, batch_size):
         max_index, max_index2 = Analyse_FFT_Result()
 
         # Store max components in heartbeat_mixed array
-        heartbeat_mixed[0, j] = ica_components[max_index, :]
-        heartbeat_mixed[1, j] = ica_components[max_index2, :]
+        heartbeat_mixed[0, j] = fix_signal_shape(ica_components[max_index, :])
+        heartbeat_mixed[1, j] = fix_signal_shape(ica_components[max_index2, :])
 
         # Plot ICA components with max_index and max_index2 for the current file
         ax[batch_idx, 0].plot(x, heartbeat_mixed[0, j], color='blue')
         ax[batch_idx, 0].set_title(f'ICA Max Component {batch_idx+1} for File {j:03}')
         ax[batch_idx, 0].set_xlabel('Time')
-        ax[batch_idx, 0].set_ylabel('Amplitude')
+        ax[batch_idx, 0].set_ylabel(f'Amplitude({np.mean(heartbeat_mixed[0, j]):02})')
 
         ax[batch_idx, 1].plot(x, heartbeat_mixed[1, j], color='red')
         ax[batch_idx, 1].set_title(f'ICA 2nd Max Component {batch_idx+1} for File {j:03}')
         ax[batch_idx, 1].set_xlabel('Time')
-        ax[batch_idx, 1].set_ylabel('Amplitude')
+        ax[batch_idx, 1].set_ylabel(f'Amplitude({np.mean(heartbeat_mixed[1, j]):02})')
 
     plt.tight_layout()
     plt.show()
