@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import pandas as pd # To check the Keys etc.
 from sklearn.decomposition import FastICA
 from sklearn.preprocessing import StandardScaler
-
-__path__ = 'Unsupervised-Team-8/problem-2/data/test-data/019'
+import mne
+__path__ = 'Unsupervised-Team-8/problem-2/data/test-data/011'
 
 normalizer = StandardScaler()
 
@@ -18,6 +18,41 @@ def flatten(arr,variable):
     data = arr[variable]
     data= data.flatten()
     return data
+
+def get_mean_std(signal):
+    mean = float(np.mean(signal))
+    std_dev = float(np.std(signal))
+    return mean, std_dev
+
+def calculate_zScore(x,mean, std_dev):
+
+    z_score = float((x-mean)/std_dev)
+    return z_score
+
+def Check_Spikes(a, threshold,mean, std_dev): # Sets 0 if under the threshold 
+    temp_zScore = calculate_zScore(a,mean, std_dev)
+    if abs(temp_zScore) >= threshold:
+        return a
+    elif temp_zScore < threshold:
+        return 0
+
+def fix_signal_shape(data_array):
+    temp_data = []
+
+    temp_mean, temp_std = get_mean_std(data_array)
+    
+    for i in range(data_array.size):
+        temp_data.append(Check_Spikes(data_array[i], 2.0, temp_mean, temp_std))
+
+    # Calculate the mean of the processed data
+    channel_mean = np.mean(temp_data, dtype=np.float64)
+    
+
+    if channel_mean < 0:
+        data_array = -data_array
+    
+    return data_array
+
 
 sample_1 = load_mat_file(__path__)
 
@@ -64,6 +99,7 @@ print(data00.shape)
 # Perform ICA
 ica = FastICA(n_components=4)
 ica_components = ica.fit_transform(data00.T).T
+#ica_components = normalizer.fit_transform(ica_components)
 
 
 # Perform FFT on ICA results
@@ -75,6 +111,20 @@ n = ica_components.shape[1]
 frequencies = np.fft.fftfreq(n)
 
 # Plot the FFT results
+
+info = mne.create_info(ch_names=['ch1', 'ch2', 'ch3', 'ch4'], sfreq=256, ch_types='eeg')
+raw = mne.io.RawArray(data_array, info)
+
+# Initialize ICA with Picard method
+ica = mne.preprocessing.ICA(method='picard', max_iter=500, random_state=42)
+
+# Fit ICA on the data
+ica.fit(raw)
+
+# Get the sources estimated by ICA
+sources = ica.get_sources(raw).get_data()
+
+
 
 
 def Analyse_FFT_Result():
@@ -116,32 +166,51 @@ def Analyse_FFT_Result():
 max_index, max_index2 = Analyse_FFT_Result()
 print(f"Max index: {max_index}, 2nd Max index: {max_index2}")
 
-fig, ax = plt.subplots(2, 1, figsize=(15, 10))
+batch_size = 5
 
-x = np.linspace(0, data00.shape[1], data00.shape[1])
 
-short_array = [max_index, max_index2]
-for i in range(0, 2):
-    ax[i].plot(x, ica_components[short_array[i], :], color='blue', label=f'ICA component {i}')
-    ax[i].set_xlabel('time (in [s])')
-    ax[i].set_ylabel('ICA signal')
 
-ax[0].set_title('ICA Components from 000.mat (Test data)')
+# Initialize heartbeat_mixed to store two components (max_index and max_index2) for each file
+# with each time series component having the length of the original data (1500)
+heartbeat_mixed = np.empty((2, 153), dtype=object)
 
-#plt.tight_layout()
+for i in range(0, 153, batch_size):
+    fig, ax = plt.subplots(batch_size, 2, figsize=(15, 20))
+    
+    for batch_idx, j in enumerate(range(i, min(i + batch_size, 153))):
+        path = 'Unsupervised-Team-8/problem-2/data/test-data/'
+        mat_file = load_mat_file(path + f"{j:03}")
+        data00 = mat_file['val'].reshape(4, -1)
+
+        # Perform ICA
+        ica = FastICA(n_components=4)
+        ica_components = ica.fit_transform(data00.T).T
+        x = np.linspace(0, data00.shape[1], data00.shape[1])
+        
+        # Perform FFT on ICA results
+        fft_results = np.fft.fft(ica_components, axis=1)
+
+        # Analyze FFT to find max components
+        max_index, max_index2 = Analyse_FFT_Result()
+
+        # Store max components in heartbeat_mixed array
+        heartbeat_mixed[0, j] = fix_signal_shape(ica_components[max_index, :])
+        heartbeat_mixed[1, j] = fix_signal_shape(ica_components[max_index2, :])
+
+        # Plot ICA components with max_index and max_index2 for the current file
+        ax[batch_idx, 0].plot(x, heartbeat_mixed[0, j], color='blue')
+        ax[batch_idx, 0].set_title(f'ICA Max Component {batch_idx+1} for File {j:03}')
+        ax[batch_idx, 0].set_xlabel('Time')
+        ax[batch_idx, 0].set_ylabel(f'Amplitude({np.mean(heartbeat_mixed[0, j]):02})')
+
+        ax[batch_idx, 1].plot(x, heartbeat_mixed[1, j], color='red')
+        ax[batch_idx, 1].set_title(f'ICA 2nd Max Component {batch_idx+1} for File {j:03}')
+        ax[batch_idx, 1].set_xlabel('Time')
+        ax[batch_idx, 1].set_ylabel(f'Amplitude({np.mean(heartbeat_mixed[1, j]):02})')
+
+    plt.tight_layout()
+    plt.show()
+    print(f"Batch starting at index {i}: Max index: {max_index}, 2nd Max index: {max_index2}")
+
+
 #plt.show()
-
-fig, ax = plt.subplots(2, 1, figsize=(15, 10))
-
-for i in range(0, 2):
-    ax[i].plot(frequencies, np.abs(fft_results[short_array[i], :]), color='red', label=f'FFT of ICA component {i}')
-    ax[i].set_xlabel('Frequency (Hz)')
-    ax[i].set_ylabel('Amplitude')
-    ax[i].set_xlim(0, np.max(frequencies)/2)  # Only plot positive frequencies
-
-ax[0].set_title('FFT of ICA Components from 000.mat (Test data)')
-
-plt.tight_layout()
-plt.show()
-
-
