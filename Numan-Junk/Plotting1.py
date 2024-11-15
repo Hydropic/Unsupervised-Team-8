@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd # To check the Keys etc.
 from sklearn.decomposition import FastICA
 from sklearn.preprocessing import StandardScaler
-import mne 
+#import mne 
 
 __path__ = 'Unsupervised-Team-8/problem-2/data/test-data/011'
 
