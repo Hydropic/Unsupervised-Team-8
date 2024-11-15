@@ -1,0 +1,109 @@
+from scipy.io import loadmat
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.decomposition import FastICA
+
+__path__ = "Unsupervised-Team-8/problem-2/data/real-data/a01m.mat"
+
+mat_file = loadmat(__path__)
+from sklearn.preprocessing import StandardScaler
+
+# Normalize the data
+scaler = StandardScaler()
+
+data00 = mat_file['val'].reshape(4, -1)
+data00_normalized = scaler.fit_transform(data00.T).T
+print(data00.shape)
+
+# Perform ICA
+ica = FastICA(n_components=4)
+ica_components = ica.fit_transform(data00.T).T
+
+fig, ax = plt.subplots(4, 1, figsize=(15, 10))
+
+x = np.linspace(0, data00.shape[1], data00.shape[1])
+
+for i in range(0, 4):
+    ax[i].plot(x, ica_components[i, :], color='blue', label=f'ICA component {i}')
+    ax[i].set_xlabel('time (in [s])')
+    ax[i].set_ylabel('ICA signal')
+
+ax[0].set_title('ICA Components from 000.mat (Test data)')
+
+
+
+# Perform FFT on ICA components
+fft_results = np.fft.fft(ica_components, axis=1)
+n = ica_components.shape[1]
+frequencies = np.fft.fftfreq(n)
+
+# Plot the FFT results
+fig, ax = plt.subplots(4, 1, figsize=(15, 10))
+
+for i in range(4):
+    ax[i].plot(frequencies, np.abs(fft_results[i]), color='green', label=f'FFT of ICA component {i}')
+    ax[i].set_xlabel('Frequency (Hz)')
+    ax[i].set_ylabel('Magnitude')
+    ax[i].set_title(f'FFT of ICA Component {i}')
+    ax[i].legend()
+
+def Analyse_FFT_Result(frequencies, fft_results):
+    weight_decay_factor = 0.85
+    Sum_of_frequency = []
+    for i in range(4):
+        
+        middle_index = len(frequencies) // 2
+        low_freqs = np.abs(fft_results[i, :middle_index])
+        high_freqs = np.abs(fft_results[i, middle_index:]) 
+        weights = np.array([weight_decay_factor**i for i in range(len(low_freqs))])
+        reversed_weights = np.array([weight_decay_factor**(i+len(low_freqs)) for i in range(len(high_freqs))])
+        weighted_low_freqs = low_freqs * weights
+        weighted_high_freqs = high_freqs * reversed_weights
+        temp_sum = np.sum(weighted_low_freqs) + np.sum(weighted_high_freqs)
+        Sum_of_frequency.append(temp_sum)
+  
+
+    
+        # Add up the values and print
+        print(f"Sum of frequency components for channel {i}: {Sum_of_frequency[i]}")
+
+    #print(len(frequencies))
+
+    temp_max = 0
+    temp_max2 = 0
+    for i in range(4):
+
+        if (Sum_of_frequency[i] > temp_max):  
+            #temp_max2 = temp_max
+            temp_max = Sum_of_frequency[i]
+            max_index = i
+
+
+    for i in range(4):
+        
+        if (Sum_of_frequency[3-i] > temp_max2) & (3-i != max_index):
+            temp_max2 = Sum_of_frequency[3-i]
+            max_index2 = 3-i
+
+    for i in range(4):
+
+        ax[i].plot(frequencies, np.abs(fft_results[i]), color='green', label=f'FFT of ICA component {i}')
+
+        ax2 = ax[i].twinx()
+        ax2.plot(frequencies[:middle_index], weights, color='red', label='Weights')
+        ax2.plot(frequencies[middle_index:], reversed_weights, color='yellow', label='Reversed Weights')
+        ax2.set_ylabel('Weights')
+        ax2.tick_params(axis='y', colors='red')
+        ax2.spines['right'].set_color('red')
+
+        ax[i].set_xlabel('Frequency (Hz)')
+        ax[i].set_ylabel('Magnitude')
+        ax[i].set_title(f'FFT of ICA Component {i}')
+        ax[i].legend()
+    plt.tight_layout()
+    return max_index, max_index2
+# Analyse the FFT results
+max_index, max_index2 = Analyse_FFT_Result(frequencies, fft_results)
+    # Plot the FFT results
+ 
+plt.show()

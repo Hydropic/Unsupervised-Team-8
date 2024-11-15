@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 import pandas as pd # To check the Keys etc.
 from sklearn.decomposition import FastICA
 from sklearn.preprocessing import StandardScaler
-import mne
+import mne 
+
 __path__ = 'Unsupervised-Team-8/problem-2/data/test-data/011'
 
 normalizer = StandardScaler()
@@ -107,31 +108,31 @@ fft_results = np.fft.fft(ica_components, axis=1)
 
 #fft_results = normalizer.fit_transform(fft_results.reshape(-1,1)).flatten()
 # Compute frequencies
-n = ica_components.shape[1]
-frequencies = np.fft.fftfreq(n)
+
 
 # Plot the FFT results
 
-info = mne.create_info(ch_names=['ch1', 'ch2', 'ch3', 'ch4'], sfreq=256, ch_types='eeg')
-raw = mne.io.RawArray(data_array, info)
+from scipy.signal import butter, filtfilt
 
-# Initialize ICA with Picard method
-ica = mne.preprocessing.ICA(method='picard', max_iter=500, random_state=42)
+def low_pass_filter(data, cutoff=20, fs=360, order=4):
+    nyquist = 0.5 * fs
+    normal_cutoff = cutoff / nyquist
+    b, a = butter(order, normal_cutoff, btype='low', analog=False)
+    y = filtfilt(b, a, data)
+    return y
 
-# Fit ICA on the data
-ica.fit(raw)
+def high_pass_filter(data, cutoff=1, fs=360, order=4):
+    nyquist = 0.5 * fs
+    normal_cutoff = cutoff / nyquist
+    b, a = butter(order, normal_cutoff, btype='high', analog=False)
+    y = filtfilt(b, a, data)
+    return y
 
-# Get the sources estimated by ICA
-sources = ica.get_sources(raw).get_data()
-
-
-
-
-def Analyse_FFT_Result():
+def Analyse_FFT_Result(frequencies, fft_results):
     weight_decay_factor = 0.96
     Sum_of_frequency = []
     for i in range(4):
-
+        
         middle_index = len(frequencies) // 2
         low_freqs = np.abs(fft_results[i, :middle_index])
         high_freqs = np.abs(fft_results[i, middle_index:]) 
@@ -163,35 +164,41 @@ def Analyse_FFT_Result():
             max_index2 = 3-i
 
     return max_index, max_index2
-max_index, max_index2 = Analyse_FFT_Result()
-print(f"Max index: {max_index}, 2nd Max index: {max_index2}")
+#max_index, max_index2 = Analyse_FFT_Result(frequencies)
+#print(f"Max index: {max_index}, 2nd Max index: {max_index2}")
 
 batch_size = 5
-
-
 
 # Initialize heartbeat_mixed to store two components (max_index and max_index2) for each file
 # with each time series component having the length of the original data (1500)
 heartbeat_mixed = np.empty((2, 153), dtype=object)
 
-for i in range(0, 153, batch_size):
+for i in range(1, 26, batch_size):
     fig, ax = plt.subplots(batch_size, 2, figsize=(15, 20))
     
     for batch_idx, j in enumerate(range(i, min(i + batch_size, 153))):
-        path = 'Unsupervised-Team-8/problem-2/data/test-data/'
-        mat_file = load_mat_file(path + f"{j:03}")
+        path = 'Unsupervised-Team-8/problem-2/data/real-data/'
+        mat_file = load_mat_file(path + f"a{j:02}m.mat")
         data00 = mat_file['val'].reshape(4, -1)
+
+        data00 = low_pass_filter(data00)
+        data00 = high_pass_filter(data00)
 
         # Perform ICA
         ica = FastICA(n_components=4)
         ica_components = ica.fit_transform(data00.T).T
         x = np.linspace(0, data00.shape[1], data00.shape[1])
         
+
+
+
         # Perform FFT on ICA results
         fft_results = np.fft.fft(ica_components, axis=1)
+        n = ica_components.shape[1]
+        frequencies = np.fft.fftfreq(n)
 
         # Analyze FFT to find max components
-        max_index, max_index2 = Analyse_FFT_Result()
+        max_index, max_index2 = Analyse_FFT_Result(frequencies,fft_results)
 
         # Store max components in heartbeat_mixed array
         heartbeat_mixed[0, j] = fix_signal_shape(ica_components[max_index, :])
