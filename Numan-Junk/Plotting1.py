@@ -74,8 +74,8 @@ def print_key_values(path):
 def Apply_ICA(data):
     # Perform ICA
     ica = FastICA(n_components=4)
-    ica_components = ica.fit_transform(data00.T).T
-    x = np.linspace(0, data00.shape[1], data00.shape[1])
+    ica_components = ica.fit_transform(data.T).T
+    x = np.linspace(0, data.shape[1], data.shape[1])
     return ica_components, x
 
 def Apply_FFT(ica_components):
@@ -85,84 +85,120 @@ def Apply_FFT(ica_components):
     return fft_results, frequencies
 # Perform FFT on ICA results
 
-def Analyse_FFT_Result(frequencies, fft_results):
-    weight_decay_factor = 0.96
+def Find_2_min_Components(data_array):
+        temp_min = float('inf')
+        temp_min2 = float('inf')
+        for i in range(len(data_array)):
+
+            if (data_array[i] < temp_min):  
+                #temp_max2 = temp_max
+                temp_min = data_array[i]
+                min_index = i
+
+        for i in range(4):
+            
+            if (data_array[len(data_array)-1-i] < temp_min2) & (len(data_array)-1-i != min_index):
+                temp_min2 = data_array[len(data_array)-1-i]
+                min_index2 = len(data_array)-1-i
+
+        return min_index, min_index2\
+    
+
+def Find_2_max_Components(data_array):
+        temp_max = 0
+        temp_max2 = 0
+        for i in range(len(data_array)):
+
+            if (data_array[i] > temp_max):  
+                #temp_max2 = temp_max
+                temp_max = data_array[i]
+                max_index = i
+
+        for i in range(4):
+            
+            if (data_array[len(data_array)-1-i] > temp_max2) & (len(data_array)-1-i != max_index):
+                temp_max2 = data_array[len(data_array)-1-i]
+                max_index2 = len(data_array)-1-i
+
+        return max_index, max_index2
+
+
+def Analyse_FFT_Result(frequencies, fft_results,weight_decay_factor = 0.96):
+    
+    weight_decay_factor = 0.84
+    weight_decay_first = 0.96
+    divide_portion = 20
     Sum_of_frequency = []
     for i in range(4):
-
+        
         middle_index = len(frequencies) // 2
-        low_freqs = np.abs(fft_results[i, :middle_index])
+        low_freqs_first = np.abs(fft_results[i, :(middle_index//divide_portion)])
+        low_freqs_second = np.abs(fft_results[i, middle_index//divide_portion:(divide_portion-1)*middle_index//divide_portion])
         high_freqs = np.abs(fft_results[i, middle_index:]) 
-        weights = np.array([weight_decay_factor**i for i in range(len(low_freqs))])
-        reversed_weights = np.array([weight_decay_factor**(i+len(low_freqs)) for i in range(len(high_freqs))])
-        weighted_low_freqs = low_freqs * weights
+        weights_first = 2-(np.array([weight_decay_first**(len(low_freqs_first)-i) for i in range(len(low_freqs_first))]))
+        weights_second = (np.array([weight_decay_factor**(i) for i in range(len(low_freqs_second))]))
+        reversed_weights = np.array([weight_decay_factor**(i+len(low_freqs_first)+len(low_freqs_second)) for i in range(len(high_freqs))])
+        weighted_low_freqs_first = low_freqs_first *(weights_first)
+        weighted_low_freqs_second = low_freqs_second *(weights_second)
         weighted_high_freqs = high_freqs * reversed_weights
-        temp_sum = np.sum(weighted_low_freqs) + np.sum(weighted_high_freqs)
+        temp_sum = np.sum(weighted_low_freqs_first)+ np.sum(weighted_low_freqs_second) + np.sum(weighted_high_freqs)
         Sum_of_frequency.append(temp_sum)
+     
         # Add up the values and print
         print(f"Sum of frequency components for channel {i}: {Sum_of_frequency[i]}")
 
 
-    temp_max = 0
-    temp_max2 = 0
-    for i in range(4):
-
-        if (Sum_of_frequency[i] > temp_max):  
-            #temp_max2 = temp_max
-            temp_max = Sum_of_frequency[i]
-            max_index = i
-
-    for i in range(4):
-        
-        if (Sum_of_frequency[3-i] > temp_max2) & (3-i != max_index):
-            temp_max2 = Sum_of_frequency[3-i]
-            max_index2 = 3-i
+    min_index, min_index2 = Find_2_min_Components(Sum_of_frequency)
+    max_index, max_index2 = Find_2_max_Components(Sum_of_frequency)
 
     return max_index, max_index2
 
 
-batch_size = 5
 
 
-heartbeat_mixed = np.empty((2, 153), dtype=object)
 
-for i in range(0, 153, batch_size):
-    fig, ax = plt.subplots(batch_size, 2, figsize=(15, 20))
+
+
+def IterateoverFiles(Mat_File_count,Plot=0,weight_decay_factor = 0.84,batch_size = 5, path = 'Unsupervised-Team-8/problem-2/data/real-data/'):
+    heartbeat_mixed = np.empty((2, Mat_File_count+1), dtype=object)
+    for i in range(1, Mat_File_count+1, batch_size):
+        fig, ax = plt.subplots(batch_size, 2, figsize=(15, 20))
     
-    for batch_idx, j in enumerate(range(i, min(i + batch_size, 153))):
-        path = 'Unsupervised-Team-8/problem-2/data/test-data/'
-        mat_file = load_mat_file(path + f"{j:03}")
-        data00 = mat_file['val'].reshape(4, -1)
+        for batch_idx, j in enumerate(range(i, min(i + batch_size, 153))):
+            #path = 'Unsupervised-Team-8/problem-2/data/test-data/'
+            mat_file = load_mat_file(path + f"a{j:02}m.mat")
+            data00 = mat_file['val'].reshape(4, -1)
 
-        # Perform ICA
+            # Perform ICA
 
-        ica_components, x = Apply_ICA(data00)        
+            ica_components, x = Apply_ICA(data00)        
 
-        # Perform FFT on ICA results
-        fft_results, frequencies = Apply_FFT(ica_components) 
+            # Perform FFT on ICA results
+            fft_results, frequencies = Apply_FFT(ica_components) 
 
+            # Analyze FFT to find max components
+            max_index, max_index2 = Analyse_FFT_Result(frequencies,fft_results, weight_decay_factor)
 
-        # Analyze FFT to find max components
-        max_index, max_index2 = Analyse_FFT_Result(frequencies,fft_results)
+            # Store max components in heartbeat_mixed array
+            heartbeat_mixed[0, j] = fix_signal_shape(ica_components[max_index, :])
+            heartbeat_mixed[1, j] = fix_signal_shape(ica_components[max_index2, :])
+            
+            # Plot ICA components with max_index and max_index2 for the current file
+            ax[batch_idx, 0].plot(x, heartbeat_mixed[0, j], color='blue')
+            ax[batch_idx, 0].set_title(f'ICA Max Component {batch_idx+1} for File {j:03}')
+            ax[batch_idx, 0].set_xlabel('Time')
+            ax[batch_idx, 0].set_ylabel(f'Amplitude({np.mean(heartbeat_mixed[0, j]):02})')
 
-        # Store max components in heartbeat_mixed array
-        heartbeat_mixed[0, j] = fix_signal_shape(ica_components[max_index, :])
-        heartbeat_mixed[1, j] = fix_signal_shape(ica_components[max_index2, :])
+            ax[batch_idx, 1].plot(x, heartbeat_mixed[1, j], color='red')
+            ax[batch_idx, 1].set_title(f'ICA 2nd Max Component {batch_idx+1} for File {j:03}')
+            ax[batch_idx, 1].set_xlabel('Time')
+            ax[batch_idx, 1].set_ylabel(f'Amplitude({np.mean(heartbeat_mixed[1, j]):02})')
+        if Plot == 1:
+            plt.tight_layout()
+            plt.show()
+            print(f"Batch starting at index {i}: Max index: {max_index}, 2nd Max index: {max_index2}")
 
-        # Plot ICA components with max_index and max_index2 for the current file
-        ax[batch_idx, 0].plot(x, heartbeat_mixed[0, j], color='blue')
-        ax[batch_idx, 0].set_title(f'ICA Max Component {batch_idx+1} for File {j:03}')
-        ax[batch_idx, 0].set_xlabel('Time')
-        ax[batch_idx, 0].set_ylabel(f'Amplitude({np.mean(heartbeat_mixed[0, j]):02})')
-
-        ax[batch_idx, 1].plot(x, heartbeat_mixed[1, j], color='red')
-        ax[batch_idx, 1].set_title(f'ICA 2nd Max Component {batch_idx+1} for File {j:03}')
-        ax[batch_idx, 1].set_xlabel('Time')
-        ax[batch_idx, 1].set_ylabel(f'Amplitude({np.mean(heartbeat_mixed[1, j]):02})')
-
-    plt.tight_layout()
-    plt.show()
-    print(f"Batch starting at index {i}: Max index: {max_index}, 2nd Max index: {max_index2}")
-
+    return heartbeat_mixed
+heartbeat_mixed = IterateoverFiles(25,1,weight_decay_factor = 0.7) 
 print(heartbeat_mixed.shape)
-#plt.show()
+

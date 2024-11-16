@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd # To check the Keys etc.
 from sklearn.decomposition import FastICA
 from sklearn.preprocessing import StandardScaler
-import mne 
+#import mne 
 
 __path__ = 'Unsupervised-Team-8/problem-2/data/test-data/011'
 
@@ -85,8 +85,8 @@ def Apply_FFT(ica_components):
     return fft_results, frequencies
 # Perform FFT on ICA results
 
-def Analyse_FFT_Result(frequencies, fft_results):
-    weight_decay_factor = 0.96
+def Analyse_FFT_Result(frequencies, fft_results,weight_decay_factor = 0.96):
+    
     Sum_of_frequency = []
     for i in range(4):
 
@@ -126,13 +126,13 @@ def Analyse_FFT_Result(frequencies, fft_results):
 
 
 
-def IterateoverFiles(Mat_File_count,Plot=0,batch_size = 5, path = 'Unsupervised-Team-8/problem-2/data/test-data/'):
+def IterateoverFiles(Mat_File_count,Plot=0,batch_size = 5, path = 'Unsupervised-Team-8/problem-2/data/test-data/',weight_decay_factor = 0.96):
     heartbeat_mixed = np.empty((2, Mat_File_count+1), dtype=object)
     for i in range(0, Mat_File_count+1, batch_size):
         fig, ax = plt.subplots(batch_size, 2, figsize=(15, 20))
     
         for batch_idx, j in enumerate(range(i, min(i + batch_size, 153))):
-            path = 'Unsupervised-Team-8/problem-2/data/test-data/'
+            #path = 'Unsupervised-Team-8/problem-2/data/test-data/'
             mat_file = load_mat_file(path + f"{j:03}")
             data00 = mat_file['val'].reshape(4, -1)
 
@@ -144,7 +144,7 @@ def IterateoverFiles(Mat_File_count,Plot=0,batch_size = 5, path = 'Unsupervised-
             fft_results, frequencies = Apply_FFT(ica_components) 
 
             # Analyze FFT to find max components
-            max_index, max_index2 = Analyse_FFT_Result(frequencies,fft_results)
+            max_index, max_index2 = Analyse_FFT_Result(frequencies,fft_results, weight_decay_factor)
 
             # Store max components in heartbeat_mixed array
             heartbeat_mixed[0, j] = fix_signal_shape(ica_components[max_index, :])
@@ -166,6 +166,6 @@ def IterateoverFiles(Mat_File_count,Plot=0,batch_size = 5, path = 'Unsupervised-
             print(f"Batch starting at index {i}: Max index: {max_index}, 2nd Max index: {max_index2}")
 
     return heartbeat_mixed
-heartbeat_mixed = IterateoverFiles(152) 
+heartbeat_mixed = IterateoverFiles(152,1) 
 print(heartbeat_mixed.shape)
 
