@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.decomposition import FastICA
 import math
 
-__path__ = "Unsupervised-Team-8/problem-2/data/real-data/a04m.mat"
+__path__ = "Unsupervised-Team-8/problem-2/data/real-data/a05m.mat"
 
 mat_file = loadmat(__path__)
 from sklearn.preprocessing import StandardScaler
@@ -48,54 +48,80 @@ for i in range(4):
     ax[i].set_title(f'FFT of ICA Component {i}')
     ax[i].legend()
 
-def Analyse_FFT_Result(frequencies, fft_results):
-    weight_decay_factor = 0.84
-    weight_decay_first = 0.96
-    Sum_of_frequency = []
-    for i in range(4):
-        
-        middle_index = len(frequencies) // 2
-        low_freqs_first = np.abs(fft_results[i, :(middle_index//20)])
-        low_freqs_second = np.abs(fft_results[i, middle_index//20:19*middle_index//20])
-        high_freqs = np.abs(fft_results[i, middle_index:]) 
-        weights_first = 2-(np.array([weight_decay_first**(len(low_freqs_first)-i) for i in range(len(low_freqs_first))]))
-        weights_second = (np.array([weight_decay_factor**(i) for i in range(len(low_freqs_second))]))
-        reversed_weights = np.array([weight_decay_factor**(i+len(low_freqs_first)+len(low_freqs_second)) for i in range(len(high_freqs))])
-        weighted_low_freqs_first = low_freqs_first *(weights_first)
-        weighted_low_freqs_second = low_freqs_second *(weights_second)
-        weighted_high_freqs = high_freqs * reversed_weights
-        temp_sum = np.sum(weighted_low_freqs_first)+ np.sum(weighted_low_freqs_second) + np.sum(weighted_high_freqs)
-        Sum_of_frequency.append(temp_sum)
-     
-        # Add up the values and print
-        print(f"Sum of frequency components for channel {i}: {Sum_of_frequency[i]}")
+def Find_2_max_Components(data_array):
+        temp_max = float('-inf')
+        temp_max2 = float('-inf')
+        for i in range(len(data_array)):
 
+            if (data_array[i] > temp_max):  
+                #temp_max2 = temp_max
+                temp_max = data_array[i]
+                max_index = i
+
+        for i in range(4):
+            
+            if (data_array[len(data_array)-1-i] > temp_max2) & (len(data_array)-1-i != max_index):
+                temp_max2 = data_array[len(data_array)-1-i]
+                max_index2 = len(data_array)-1-i
+
+        return max_index, max_index2
+
+def Analyse_FFT_Result(frequencies, fft_results):
+    
+    weight_decay_factor = 0.999
+    weight_decay_first = 0.9
+    divide_portion = 30
+    exponential_multiplier = 2
+    Sum_of_frequency = []
+    Dominant_freq_array = []
+    for i in range(4):
+        middle_index = len(frequencies) // 2
+        temp_fft= fft_results[i]
+
+        Dominant_freq1, Dominant_freq2 = Find_2_max_Components(np.abs(temp_fft))
+        Dominant_freq1 = np.argmax(np.abs(temp_fft))
+        Dominant_freq_array.append(Dominant_freq1)
+        
+
+        middle_index = len(frequencies) // 2
+        low_freqs = np.abs(fft_results[i, :middle_index])
+        high_freqs = np.abs(fft_results[i, middle_index:]) 
+        weights = np.array([0 for i in range(frequencies.shape[0])])
+        weights[Dominant_freq1] = 1
+        reversed_weights = np.array([weight_decay_factor**(i+len(low_freqs)) for i in range(len(high_freqs))])
+        #weighted_low_freqs = low_freqs * weights
+        weighted_high_freqs = high_freqs * reversed_weights
+        #temp_sum = np.sum(weighted_low_freqs) + np.sum(weighted_high_freqs)
+        #Sum_of_frequency.append(temp_sum)
+        # Add up the values and print
+        #print(f"Sum of frequency components for channel {i}: {Sum_of_frequency[i]}")
+     
+        #print(f"Sum of frequency components for channel {i}: {Sum_of_frequency[i]}")
     #print(len(frequencies))
 
-    temp_max = float('inf')
-    temp_max2 = float('inf')
+
+
+    min_diff = float('inf')
+    min_diff_index1 = 0
+    min_diff_index2 = 0
     for i in range(4):
-
-        if (Sum_of_frequency[i] < temp_max):  
-            #temp_max2 = temp_max
-            temp_max = Sum_of_frequency[i]
-            max_index = i
-
-
-    for i in range(4):
-        
-        if (Sum_of_frequency[3-i] < temp_max2) & (3-i != max_index):
-            temp_max2 = Sum_of_frequency[3-i]
-            max_index2 = 3-i
+        for j in range(i+1, 4):
+            diff = abs(Dominant_freq_array[i] - Dominant_freq_array[j])
+            if diff < min_diff:
+                min_diff = diff
+                min_diff_index1 = i
+                min_diff_index2 = j
+    print(f"Components {min_diff_index1} and {min_diff_index2} are closest to eachother with difference {min_diff}")
 
     for i in range(4):
 
         ax[i].plot(frequencies, np.abs(fft_results[i]), color='green', label=f'FFT of ICA component {i}')
+        ax[i].axvline(frequencies[Dominant_freq1], color='red', linestyle='--', label='Dominant Frequency')
 
         ax2 = ax[i].twinx()
-        ax2.plot(frequencies[:middle_index//20], weights_first, color='blue', label='Weights')
-        ax2.plot(frequencies[middle_index//20:19*middle_index//20], weights_second, color='blue', label='Weights')
-        ax2.plot(frequencies[middle_index:], reversed_weights, color='yellow', label='Reversed Weights')
+        ax2.plot(frequencies, weights, color='blue', label='Weights')
+        #ax2.plot(frequencies[middle_index//divide_portion:(divide_portion-1)*middle_index//divide_portion], weights_second, color='blue', label='Weights')
+        #ax2.plot(frequencies[middle_index:], reversed_weights, color='yellow', label='Reversed Weights')
         ax2.set_ylabel('Weights')
         ax2.tick_params(axis='y', colors='red')
         ax2.spines['right'].set_color('red')
@@ -105,10 +131,11 @@ def Analyse_FFT_Result(frequencies, fft_results):
         ax[i].set_title(f'FFT of ICA Component {i}')
         ax[i].legend()
     plt.tight_layout()
-    return max_index, max_index2
+    return min_diff_index1, min_diff_index2
 # Analyse the FFT results
 max_index, max_index2 = Analyse_FFT_Result(frequencies, fft_results)
 print(f"Min index: {max_index}, 2nd Min index: {max_index2}")
     # Plot the FFT results
  
 plt.show()
+
