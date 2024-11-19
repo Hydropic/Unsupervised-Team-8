@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd # To check the Keys etc.
 from sklearn.decomposition import FastICA
 from sklearn.preprocessing import StandardScaler
-import mne 
+#import mne 
 
 __path__ = 'Unsupervised-Team-8/problem-2/data/test-data/011'
 
@@ -54,85 +54,42 @@ def fix_signal_shape(data_array):
     
     return data_array
 
+def print_key_values(path):
+    sample_1 = load_mat_file(path)
 
-sample_1 = load_mat_file(__path__)
+    keys = []
+    values = []
 
-keys = []
-values = []
+    for key, value in sample_1.items():
+        if not key.startswith('__'):  # Skip internal meta-keys
+            keys.append(key)
+            values.append(value.shape if hasattr(value, 'shape') else 'Not an array')
 
-for key, value in sample_1.items():
-    if not key.startswith('__'):  # Skip internal meta-keys
-        keys.append(key)
-        values.append(value.shape if hasattr(value, 'shape') else 'Not an array')
+    # Create a DataFrame for better formatting
+    df = pd.DataFrame({'Key': keys, 'Shape': values})
 
-# Create a DataFrame for better formatting
-df = pd.DataFrame({'Key': keys, 'Shape': values})
+    # Print the table
+    print(df)
 
-# Print the table
-print(df)
+def Apply_ICA(data):
+    # Perform ICA
+    ica = FastICA(n_components=4)
+    ica_components = ica.fit_transform(data.T).T
+    x = np.linspace(0, data.shape[1], data.shape[1])
+    return ica_components, x
 
-data = sample_1['val']
-
-channel_2 =  data[0, 1, :]
-channel_1 =  data[0, 0, :]
-channel_3 =  data[0, 2, :]
-channel_4 =  data[0, 3, :]
-
-
-
-#plt.figure(figsize=(10, 8))
-for i, channel in enumerate([channel_1, channel_2, channel_3, channel_4], start=1):
-    plt.subplot(4, 1, i)
-    plt.plot(channel)
-    plt.title(f"Channel {i}")
-    plt.xlabel("Time")
-    plt.ylabel("Amplitude")
-
-#plt.tight_layout()
-#plt.show()
-
-mat_file = load_mat_file(__path__)
-
-data00 = mat_file['val'].reshape(4, -1)
-
-print(data00.shape)
-
-# Perform ICA
-ica = FastICA(n_components=4)
-ica_components = ica.fit_transform(data00.T).T
-#ica_components = normalizer.fit_transform(ica_components)
-
-
+def Apply_FFT(ica_components):
+    fft_results = np.fft.fft(ica_components, axis=1)
+    n = ica_components.shape[1]
+    frequencies = np.fft.fftfreq(n)
+    return fft_results, frequencies
 # Perform FFT on ICA results
-fft_results = np.fft.fft(ica_components, axis=1)
 
-#fft_results = normalizer.fit_transform(fft_results.reshape(-1,1)).flatten()
-# Compute frequencies
-
-
-# Plot the FFT results
-
-from scipy.signal import butter, filtfilt
-
-def low_pass_filter(data, cutoff=20, fs=360, order=4):
-    nyquist = 0.5 * fs
-    normal_cutoff = cutoff / nyquist
-    b, a = butter(order, normal_cutoff, btype='low', analog=False)
-    y = filtfilt(b, a, data)
-    return y
-
-def high_pass_filter(data, cutoff=1, fs=360, order=4):
-    nyquist = 0.5 * fs
-    normal_cutoff = cutoff / nyquist
-    b, a = butter(order, normal_cutoff, btype='high', analog=False)
-    y = filtfilt(b, a, data)
-    return y
-
-def Analyse_FFT_Result(frequencies, fft_results):
-    weight_decay_factor = 0.96
+def Analyse_FFT_Result(frequencies, fft_results,weight_decay_factor = 0.96):
+    
     Sum_of_frequency = []
     for i in range(4):
-        
+
         middle_index = len(frequencies) // 2
         low_freqs = np.abs(fft_results[i, :middle_index])
         high_freqs = np.abs(fft_results[i, middle_index:]) 
@@ -145,7 +102,6 @@ def Analyse_FFT_Result(frequencies, fft_results):
         # Add up the values and print
         print(f"Sum of frequency components for channel {i}: {Sum_of_frequency[i]}")
 
-    #print(len(frequencies))
 
     temp_max = 0
     temp_max2 = 0
@@ -156,7 +112,6 @@ def Analyse_FFT_Result(frequencies, fft_results):
             temp_max = Sum_of_frequency[i]
             max_index = i
 
-
     for i in range(4):
         
         if (Sum_of_frequency[3-i] > temp_max2) & (3-i != max_index):
@@ -164,60 +119,114 @@ def Analyse_FFT_Result(frequencies, fft_results):
             max_index2 = 3-i
 
     return max_index, max_index2
-#max_index, max_index2 = Analyse_FFT_Result(frequencies)
-#print(f"Max index: {max_index}, 2nd Max index: {max_index2}")
 
-batch_size = 5
 
-# Initialize heartbeat_mixed to store two components (max_index and max_index2) for each file
-# with each time series component having the length of the original data (1500)
-heartbeat_mixed = np.empty((2, 153), dtype=object)
 
-for i in range(1, 26, batch_size):
-    fig, ax = plt.subplots(batch_size, 2, figsize=(15, 20))
+
+
+
+
+def IterateoverFiles(Mat_File_count,Plot=0,batch_size = 5, path = 'Unsupervised-Team-8/problem-2/data/test-data/',weight_decay_factor = 0.96):
+    heartbeat_mixed = np.empty((2, Mat_File_count+1), dtype=object)
+    for i in range(0, Mat_File_count+1, batch_size):
+        if Plot == 1:
+            fig, ax = plt.subplots(batch_size, 2, figsize=(15, 20))
     
-    for batch_idx, j in enumerate(range(i, min(i + batch_size, 153))):
-        path = 'Unsupervised-Team-8/problem-2/data/real-data/'
-        mat_file = load_mat_file(path + f"a{j:02}m.mat")
-        data00 = mat_file['val'].reshape(4, -1)
+        for batch_idx, j in enumerate(range(i, min(i + batch_size, 153))):
+            #path = 'Unsupervised-Team-8/problem-2/data/test-data/'
+            mat_file = load_mat_file(path + f"{j:03}")
+            data00 = mat_file['val'].reshape(4, -1)
 
-        data00 = low_pass_filter(data00)
-        data00 = high_pass_filter(data00)
+            # Perform ICA
 
-        # Perform ICA
-        ica = FastICA(n_components=4)
-        ica_components = ica.fit_transform(data00.T).T
-        x = np.linspace(0, data00.shape[1], data00.shape[1])
+            ica_components, x = Apply_ICA(data00)        
+
+            # Perform FFT on ICA results
+            fft_results, frequencies = Apply_FFT(ica_components) 
+
+            # Analyze FFT to find max components
+            max_index, max_index2 = Analyse_FFT_Result(frequencies,fft_results, weight_decay_factor)
+
+            # Store max components in heartbeat_mixed array
+            heartbeat_mixed[0, j] = fix_signal_shape(ica_components[max_index, :])
+            heartbeat_mixed[1, j] = fix_signal_shape(ica_components[max_index2, :])
+        if Plot == 1:    
+            # Plot ICA components with max_index and max_index2 for the current file
+            ax[batch_idx, 0].plot(x, heartbeat_mixed[0, j], color='blue')
+            ax[batch_idx, 0].set_title(f'ICA Max Component {batch_idx+1} for File {j:03}')
+            ax[batch_idx, 0].set_xlabel('Time')
+            ax[batch_idx, 0].set_ylabel(f'Amplitude({np.mean(heartbeat_mixed[0, j]):02})')
+
+            ax[batch_idx, 1].plot(x, heartbeat_mixed[1, j], color='red')
+            ax[batch_idx, 1].set_title(f'ICA 2nd Max Component {batch_idx+1} for File {j:03}')
+            ax[batch_idx, 1].set_xlabel('Time')
+            ax[batch_idx, 1].set_ylabel(f'Amplitude({np.mean(heartbeat_mixed[1, j]):02})')
         
+            plt.tight_layout()
+            plt.show()
+            print(f"Batch starting at index {i}: Max index: {max_index}, 2nd Max index: {max_index2}")
 
+    return heartbeat_mixed
+heartbeat_mixed = IterateoverFiles(152) 
 
+from sklearn.decomposition import PCA
 
-        # Perform FFT on ICA results
-        fft_results = np.fft.fft(ica_components, axis=1)
-        n = ica_components.shape[1]
-        frequencies = np.fft.fftfreq(n)
+def pad_or_truncate(arrays, target_length):
+    padded_arrays = []
+    for arr in arrays:
+        if len(arr) < target_length:
+            # Pad with zeros
+            padded_array = np.pad(arr, (0, target_length - len(arr)), 'constant')
+        else:
+            # Truncate
+            padded_array = arr[:target_length]
+        padded_arrays.append(padded_array)
+    return np.array(padded_arrays)
 
-        # Analyze FFT to find max components
-        max_index, max_index2 = Analyse_FFT_Result(frequencies,fft_results)
+def reshape_data(heartbeat_mixed):
+    reshaped_data = []
+    
+    # Find the maximum signal length
+    max_length = max(
+        heartbeat_mixed[i, j].size
+        for i in range(heartbeat_mixed.shape[0])
+        for j in range(heartbeat_mixed.shape[1])
+        if heartbeat_mixed[i, j] is not None
+    )
+    
+    for i in range(heartbeat_mixed.shape[0]):
+        for j in range(heartbeat_mixed.shape[1]):
+            if heartbeat_mixed[i, j] is not None:
+                signal = heartbeat_mixed[i, j]
+                # Pad signal to match max_length
+                padded_signal = np.pad(signal, (0, max_length - len(signal)))
+                reshaped_data.append(padded_signal)
 
-        # Store max components in heartbeat_mixed array
-        heartbeat_mixed[0, j] = fix_signal_shape(ica_components[max_index, :])
-        heartbeat_mixed[1, j] = fix_signal_shape(ica_components[max_index2, :])
+    return np.array(reshaped_data)
 
-        # Plot ICA components with max_index and max_index2 for the current file
-        ax[batch_idx, 0].plot(x, heartbeat_mixed[0, j], color='blue')
-        ax[batch_idx, 0].set_title(f'ICA Max Component {batch_idx+1} for File {j:03}')
-        ax[batch_idx, 0].set_xlabel('Time')
-        ax[batch_idx, 0].set_ylabel(f'Amplitude({np.mean(heartbeat_mixed[0, j]):02})')
+def apply_pca_with_elbow(heartbeat_mixed, max_components=306):
+    # Reshape the data
+    reshaped_data = reshape_data(heartbeat_mixed)
 
-        ax[batch_idx, 1].plot(x, heartbeat_mixed[1, j], color='red')
-        ax[batch_idx, 1].set_title(f'ICA 2nd Max Component {batch_idx+1} for File {j:03}')
-        ax[batch_idx, 1].set_xlabel('Time')
-        ax[batch_idx, 1].set_ylabel(f'Amplitude({np.mean(heartbeat_mixed[1, j]):02})')
+    # Normalize the data
+    normalizer = StandardScaler()
+    normalized_data = normalizer.fit_transform(reshaped_data)
 
-    plt.tight_layout()
+    # Apply PCA for a range of components
+    explained_variances = []
+    for n_components in range(1, min(max_components, normalized_data.shape[1]) + 1):
+        pca = PCA(n_components=n_components)
+        pca.fit(normalized_data)
+        explained_variances.append(sum(pca.explained_variance_ratio_))
+
+    # Plot the elbow curve
+    plt.figure(figsize=(24, 18))
+    plt.plot(range(1, len(explained_variances) + 1), explained_variances, marker='o', linestyle='--')
+    plt.xlabel('Number of Components')
+    plt.ylabel('Cumulative Explained Variance')
+    plt.title('Elbow Method for Optimal PCA Components')
     plt.show()
-    print(f"Batch starting at index {i}: Max index: {max_index}, 2nd Max index: {max_index2}")
 
+    return explained_variances
 
-#plt.show()
+principal_components, explained_variance =  apply_pca_with_elbow(heartbeat_mixed)

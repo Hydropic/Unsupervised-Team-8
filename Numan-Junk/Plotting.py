@@ -2,8 +2,12 @@ import numpy as np
 import scipy.io
 import matplotlib.pyplot as plt
 import pandas as pd # To check the Keys etc.
-from sklearn.decomposition import FastICA
+from sklearn.decomposition import FastICA, PCA
 from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans, DBSCAN
+import tensorflow as tf
+from tensorflow.keras import layers, models
+from sklearn.model_selection import train_test_split
 #import mne 
 
 __path__ = 'Unsupervised-Team-8/problem-2/data/test-data/011'
@@ -122,18 +126,19 @@ def Analyse_FFT_Result(frequencies, fft_results,weight_decay_factor = 0.96):
 
 
 
-
-
+def spike_density(data_array):
+    
 
 
 def IterateoverFiles(Mat_File_count,Plot=0,batch_size = 5, path = 'Unsupervised-Team-8/problem-2/data/test-data/',weight_decay_factor = 0.96):
     heartbeat_mixed = np.empty((2, Mat_File_count+1), dtype=object)
     for i in range(0, Mat_File_count+1, batch_size):
-        fig, ax = plt.subplots(batch_size, 2, figsize=(15, 20))
+        if Plot == 1:
+            fig, ax = plt.subplots(batch_size, 2, figsize=(15, 20))
     
         for batch_idx, j in enumerate(range(i, min(i + batch_size, 153))):
             #path = 'Unsupervised-Team-8/problem-2/data/test-data/'
-            mat_file = load_mat_file(path + f"{j:03}")
+            mat_file = load_mat_file(path + f"{j:03}.mat")
             data00 = mat_file['val'].reshape(4, -1)
 
             # Perform ICA
@@ -149,7 +154,7 @@ def IterateoverFiles(Mat_File_count,Plot=0,batch_size = 5, path = 'Unsupervised-
             # Store max components in heartbeat_mixed array
             heartbeat_mixed[0, j] = fix_signal_shape(ica_components[max_index, :])
             heartbeat_mixed[1, j] = fix_signal_shape(ica_components[max_index2, :])
-            
+        if Plot == 1:    
             # Plot ICA components with max_index and max_index2 for the current file
             ax[batch_idx, 0].plot(x, heartbeat_mixed[0, j], color='blue')
             ax[batch_idx, 0].set_title(f'ICA Max Component {batch_idx+1} for File {j:03}')
@@ -160,12 +165,68 @@ def IterateoverFiles(Mat_File_count,Plot=0,batch_size = 5, path = 'Unsupervised-
             ax[batch_idx, 1].set_title(f'ICA 2nd Max Component {batch_idx+1} for File {j:03}')
             ax[batch_idx, 1].set_xlabel('Time')
             ax[batch_idx, 1].set_ylabel(f'Amplitude({np.mean(heartbeat_mixed[1, j]):02})')
-        if Plot == 1:
+        
             plt.tight_layout()
             plt.show()
             print(f"Batch starting at index {i}: Max index: {max_index}, 2nd Max index: {max_index2}")
 
     return heartbeat_mixed
-heartbeat_mixed = IterateoverFiles(152,1) 
+heartbeat_mixed = IterateoverFiles(152,0)
+heartbeat_mixed = heartbeat_mixed.reshape(-1, 1)
+#
+
+"""
+min_length = min([len(signal) for signal in heartbeat_mixed.reshape(-1)])
+heartbeat_mixed = np.array([signal[:min_length] for signal in heartbeat_mixed.reshape(-1)])
 print(heartbeat_mixed.shape)
+
+covariance_matrix = np.cov(heartbeat_mixed.T)
+
+# fig, ax = plt.subplots(nrows=1, ncols=1)
+# plt.title('Covariance matrix')
+# plt.axis('off')
+# ax.imshow(covariance_matrix)
+# plt.show()
+eigenvalues, eigenvectors = np.linalg.eig(covariance_matrix)
+eigenvalues = np.sort(eigenvalues)[::-1]
+# plt.plot(np.linspace(1, len(eigenvalues), num=len(eigenvalues)), np.abs(eigenvalues))
+
+# plt.ylabel('Eigenvalues size/strength')
+# plt.xlabel('number of eigenvalue (sorted by strength)')
+# plt.title('Eigenvalues sorted')
+# plt.show()
+
+total_variance_kept = eigenvalues[0:150].sum()
+total_variance = eigenvalues.sum()
+
+ratio_kept = total_variance_kept / total_variance
+
+print(f'Variance kept: {total_variance_kept}, total variance: {total_variance}, ratio kept: {ratio_kept}')
+pca = PCA(n_components=200)
+X = pca.fit_transform(heartbeat_mixed)
+
+eps = 2
+min_samples = 2
+
+cluster = DBSCAN(eps=eps, min_samples=min_samples, metric='euclidean').fit(X)
+
+# print(cluster.labels_)
+print(f'DBSCAN found {len(np.unique(cluster.labels_))} clusters')
+print(f'There is/are {len(np.argwhere(cluster.labels_ == -1))} outlier(s)')
+fig = plt.figure(figsize=(10, 6))
+ax = fig.add_subplot(111, projection='3d')
+
+# Plot each cluster with a different color
+unique_labels = np.unique(cluster.labels_)
+for label in unique_labels:
+    cluster_points = X[cluster.labels_ == label]
+    ax.scatter(cluster_points[:, 0], cluster_points[:, 1], cluster_points[:, 2], label=f'Cluster {label}', edgecolor='k', s=100)
+
+ax.set_title('DBSCAN Clusters')
+ax.set_xlabel('PCA Component 1')
+ax.set_ylabel('PCA Component 2')
+ax.set_zlabel('PCA Component 3')
+ax.legend()
+plt.show()
+"""
 
