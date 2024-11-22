@@ -523,6 +523,9 @@ if __name__ == "__main__":
     # Output cluster assignments
     print("Cluster Assignments for Each Data Point:", cluster_assignments)
 
+
+
+
 #print(f"Raw variance {raw_variance}, Feature variance {feature_variance},AutoEncoder Variance {latent_variance}, Total Variance {total_variance}")
 
 """covariance_matrix = np.cov(unmixed_heartbeat.T)
