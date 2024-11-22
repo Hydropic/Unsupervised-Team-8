@@ -1,0 +1,174 @@
+import numpy as np
+import scipy.stats as stats
+from scipy.signal import welch, hilbert
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.mixture import GaussianMixture
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from scipy.spatial.distance import mahalanobis
+from scipy.signal import find_peaks
+import Plotting
+
+heartbeat_mixed = Plotting.IterateoverFiles(152,0)
+#heartbeat_mixed = heartbeat_mixed.reshape(-1, 1)
+unmixed_heartbeat = []
+skipped_files = []
+for i in range(153):
+    dens1 = Plotting.peak_density(heartbeat_mixed[0][i])
+    dens2 = Plotting.peak_density(heartbeat_mixed[1][i])
+    if dens1 > dens2:
+        unmixed_heartbeat.append(heartbeat_mixed[0][i])
+        skipped_files.append(heartbeat_mixed[1][i])
+    else:
+        unmixed_heartbeat.append(heartbeat_mixed[1][i])
+        skipped_files.append(heartbeat_mixed[0][i])
+
+def extract_features_from_heartbeat(heartbeats, sampling_rate=360):
+    features = []
+    
+    for heartbeat in heartbeats:
+
+        peaks, properties = find_peaks(heartbeat, height=0.4, distance=40, prominence=2.2, width=(None,30))
+        bpm = len(peaks)/len(heartbeat)
+        distance_between_spikes = np.std(np.diff(peaks))
+        ptp_std = np.std(heartbeat[peaks])
+        # take std of peak to peak
+        
+
+        #windows_arr = get_heartbeat_windows([heartbeat], [peaks[0]])
+        #length_window = np.std([len(window) for window in windows_arr[0]])
+         # Morphological features
+
+        #a = np.trapz(heartbeat)
+
+        
+        features.append([
+           bpm, distance_between_spikes, ptp_std
+        ])
+    
+    features = np.array(features)
+    
+    # Normalize the features
+    scaler = StandardScaler()
+    normalized_features = scaler.fit_transform(features)
+    
+    return normalized_features
+
+# Example usage
+# Assuming `all_test_heartbeats` is defined elsewhere in your code
+
+from scipy.signal import butter, filtfilt
+
+def highpass_filter(data, cutoff, fs, order=5):
+    nyquist = 0.5 * fs
+    normal_cutoff = cutoff / nyquist
+    b, a = butter(order, normal_cutoff, btype='high', analog=False)
+    filtered_data = filtfilt(b, a, data)
+    return filtered_data
+
+cutoff_frequency = 1  # Define your cutoff frequency in Hz
+sampling_rate = 360  # Define your sampling rate in Hz
+
+filtered_heartbeats = [highpass_filter(heartbeat, cutoff_frequency, sampling_rate) for heartbeat in unmixed_heartbeat]
+
+
+normalized_features = extract_features_from_heartbeat(filtered_heartbeats)
+
+# Perform PCA on normalized features
+pca = PCA(n_components=2)
+pca_features = pca.fit_transform(normalized_features)
+
+explained_variance = pca.explained_variance_ratio_
+total_variance = np.sum(explained_variance)
+
+gmm = GaussianMixture(n_components=3)
+labels = gmm.fit_predict(normalized_features)
+
+means = gmm.means_
+covariances = gmm.covariances_
+
+furthest_points = {i: [] for i in range(3)}
+
+for cluster_idx in range(3):
+    # Select data points belonging to the current cluster
+    cluster_points = normalized_features[labels == cluster_idx]
+    
+    # Compute the inverse of the covariance matrix for Mahalanobis distance
+    inv_cov = np.linalg.inv(covariances[cluster_idx])
+    
+    # Calculate Mahalanobis distance for each point
+    distances = [
+        mahalanobis(point, means[cluster_idx], inv_cov) for point in cluster_points
+    ]
+    
+    # Sort points by distance in descending order
+    sorted_indices = np.argsort(distances)[::-1]
+    
+    # Get the top 10 furthest points (or fewer if less than 10)
+    top_10_indices = sorted_indices[:10]
+    furthest_points[cluster_idx] = top_10_indices
+
+unlikeliest_points = {i: [] for i in range(3)}
+
+for cluster_idx in range(3):
+    # Select data points belonging to the current cluster
+    cluster_points = normalized_features[labels == cluster_idx]
+    
+    # Compute the log probability of each point under the Gaussian component
+    log_probs = gmm.score_samples(cluster_points)
+    
+    # Sort points by log probability (ascending, since lower is less likely)
+    sorted_indices = np.argsort(log_probs)
+    
+    # Get the top 10 least likely points (lowest log-probability)
+    top_10_indices = sorted_indices[:10]
+    unlikeliest_points[cluster_idx] = top_10_indices
+
+fig = plt.figure(figsize=(10, 8))
+ax = fig.add_subplot(111, projection='3d')
+scatter = ax.scatter(pca_features[:, 0], pca_features[:, 1], c=labels, cmap='viridis', marker='o')
+ax.set_title('2D PCA of Heartbeat Features with GMM Clustering')
+ax.set_xlabel('Principal Component 1')
+ax.set_ylabel('Principal Component 2')
+fig.colorbar(scatter, label='Cluster Label')
+plt.show()
+
+for i, variance in enumerate(explained_variance):
+    print(f"Principal Component {i+1}: {variance:.2%} variance explained")
+
+print(f"Total variance explained by selected components: {total_variance:.2%}")
+
+# Plot ten representative heartbeats from each cluster
+num_representatives = 10
+unique_labels = np.unique(labels)
+
+for cluster in unique_labels:
+    cluster_indices = np.where(labels == cluster)[0]
+    selected_indices = np.random.choice(cluster_indices, num_representatives, replace=False)
+    
+    plt.figure(figsize=(15, 20))
+    
+    for i, idx in enumerate(unlikeliest_points[cluster]):
+        plt.subplot(num_representatives, 1, i + 1)
+        plt.plot(filtered_heartbeats[idx])
+        plt.title(f'Cluster {cluster + 1} - Rep {i + 1}')
+        plt.axis('off')
+    
+    plt.suptitle(f'Representative Heartbeats from Cluster {cluster + 1}')
+    plt.tight_layout(rect=[0, 0, 1, 0.96])
+    plt.show()
+
+# Get the loadings
+loadings = pca.components_
+
+# Print the loadings
+feature_names = [
+    "mean_rr", "sdnn", "rmssd", "pnn50"
+]
+
+for i, component in enumerate(loadings):
+    print(f"Principal Component {i+1} Loadings:")
+    for feature, loading in zip(feature_names, component):
+        print(f"{feature}: {loading:.4f}")
+    print()
