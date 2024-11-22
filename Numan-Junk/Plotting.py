@@ -241,25 +241,33 @@ def plot_last():
 
 
 #plot_last()
+from scipy.signal import butter, filtfilt
+def highpass_filter(data, cutoff=1, fs=360, order=5):
+    nyquist = 0.5 * fs
+    normal_cutoff = cutoff / nyquist
+    b, a = butter(order, normal_cutoff, btype='high', analog=False)
+    filtered_data = filtfilt(b, a, data)
+    return filtered_data
 
 min_length = min([len(signal) for signal in unmixed_heartbeat])
 unmixed_heartbeat = np.array([signal[:min_length] for signal in unmixed_heartbeat])
-print(unmixed_heartbeat.shape)
+unmixed_heartbeat = [highpass_filter(heartbeat, cutoff=1, fs=360, order=5) for heartbeat in unmixed_heartbeat]
+#print(unmixed_heartbeat.shape)
 
-covariance_matrix = np.cov(unmixed_heartbeat.T)
-eigenvalues, eigenvectors = np.linalg.eig(covariance_matrix)
-eigenvalues = np.sort(eigenvalues)[::-1]
-total_variance = eigenvalues.sum()
+# covariance_matrix = np.cov(unmixed_heartbeat.T)
+# eigenvalues, eigenvectors = np.linalg.eig(covariance_matrix)
+# eigenvalues = np.sort(eigenvalues)[::-1]
+# total_variance = eigenvalues.sum()
 
 normalizer_minmax = MinMaxScaler()
 normalized_data = normalizer_minmax.fit_transform(unmixed_heartbeat)
 
 input_dim = min_length  # Number of features
 
-shell3 = 512
-shell2 = 256
-shell1 = 128
-core = 64
+shell3 = 16
+shell2 = 8
+shell1 = 4
+core = 2
 
 seed = 42
 np.random.seed(seed)
@@ -349,7 +357,7 @@ latent_variance = np.var(latent_features, axis=0)
 #total_variance = np.sum(latent_variance)
 cumulative_variance = np.cumsum(latent_variance) #/ total_variance
 
-total_variance = eigenvalues.sum()
+#total_variance = eigenvalues.sum()
 # Plot cumulative variance
 # plt.figure(figsize=(10, 6))
 # plt.plot(cumulative_variance, marker='o')
@@ -441,7 +449,7 @@ def compare_variance(raw_data, features, latent_features):
     plt.legend()
     plt.grid()
     plt.show()
-    return explained_variance_raw/ total_variance, explained_variance_features/ total_variance , cumulative_variance / total_variance
+    #return explained_variance_raw/ total_variance, explained_variance_features/ total_variance , cumulative_variance / total_variance
 
 def hierarchical_clustering(latent_features):
     # Step 1: Generate the linkage matrix
@@ -505,7 +513,7 @@ if __name__ == "__main__":
     features = extract_features_for_all(raw_data, sampling_rate)  # Replace with actual feature extraction
 
     # Compare variance
-    raw_variance, feature_variance, latent_variance = compare_variance(raw_data, features, latent_features)
+    compare_variance(raw_data, features, latent_features)
 
     scaler = StandardScaler()
     latent_features_scaled = scaler.fit_transform(latent_features)    
