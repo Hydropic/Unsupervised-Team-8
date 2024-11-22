@@ -177,7 +177,7 @@ def Analyse_FFT_Result(frequencies, fft_results,weight_decay_factor = 0.96):
 def IterateoverFiles(Mat_File_count,Plot=0,weight_decay_factor = 0.84,batch_size = 2, path = 'Unsupervised-Team-8/problem-2/data/real-data/'):
     heartbeat_mixed = np.empty((4, Mat_File_count+1), dtype=object)
     for i in range(1, Mat_File_count+1, batch_size):
-        fig, ax = plt.subplots(4, batch_size, figsize=(15, 20))
+        fig, ax = plt.subplots(batch_size, 2, figsize=(15, 20))
     
         for batch_idx, j in enumerate(range(i, min(i + batch_size, Mat_File_count+1))):
             #path = 'Unsupervised-Team-8/problem-2/data/test-data/'
@@ -211,15 +211,7 @@ def IterateoverFiles(Mat_File_count,Plot=0,weight_decay_factor = 0.84,batch_size
             ax[1, batch_idx].set_xlabel('Time')
             ax[1, batch_idx].set_ylabel(f'Amplitude({np.mean(heartbeat_mixed[1, j]):02})')
 
-            ax[2, batch_idx].plot(x, heartbeat_mixed[2, j], color='blue')
-            ax[2, batch_idx].set_title(f'ICA Min Component {batch_idx+1} for File {j:03}')
-            ax[2, batch_idx].set_xlabel('Time')
-            ax[2, batch_idx].set_ylabel(f'Amplitude({np.mean(heartbeat_mixed[1, j]):02})')
 
-            ax[3, batch_idx].plot(x, heartbeat_mixed[3, j], color='blue')
-            ax[3, batch_idx].set_title(f'ICA 2nd Min Component {batch_idx+1} for File {j:03}')
-            ax[3, batch_idx].set_xlabel('Time')
-            ax[3, batch_idx].set_ylabel(f'Amplitude({np.mean(heartbeat_mixed[1, j]):02})')
         if Plot == 1:
             plt.tight_layout()
             plt.show()

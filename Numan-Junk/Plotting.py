@@ -15,6 +15,9 @@ import scipy.stats
 from scipy.fft import fft, fftfreq
 import scipy.cluster.hierarchy as sch
 from sklearn.cluster import AgglomerativeClustering
+import math
+from sklearn.mixture import GaussianMixture
+
 #import mne 
 
 __path__ = 'Unsupervised-Team-8/problem-2/data/test-data/011'
@@ -253,26 +256,36 @@ normalized_data = normalizer_minmax.fit_transform(unmixed_heartbeat)
 
 input_dim = min_length  # Number of features
 
+shell3 = 16
+shell2 = 8
+shell1 = 4
+core = 2
+
+seed = 42
+np.random.seed(seed)
+tf.random.set_seed(seed)
+np.random.seed(seed)
+
 # Encoder
 input_layer = layers.Input(shape=(input_dim,))
-encoded = layers.Dense(64, activation='relu')(input_layer)
-encoded = layers.Dense(32, activation='relu')(encoded)
-encoded = layers.Dense(16, activation='relu')(encoded)
+encoded = layers.Dense(shell3, activation='selu')(input_layer)
+encoded = layers.Dense(shell2, activation='selu')(encoded)
+encoded = layers.Dense(shell1, activation='selu')(encoded)
 
 # Latent Space
-latent_space = layers.Dense(8, activation='relu')(encoded)
-
+latent_space = layers.Dense(core, activation='selu')(encoded)
+#drop it to 2
 # Decoder
-decoded = layers.Dense(16, activation='relu')(latent_space)
-decoded = layers.Dense(32, activation='relu')(decoded)
-decoded = layers.Dense(64, activation='relu')(decoded)
+decoded = layers.Dense(shell1, activation='selu')(latent_space)
+decoded = layers.Dense(shell2, activation='selu')(decoded)
+decoded = layers.Dense(shell3, activation='selu')(decoded)
 output_layer = layers.Dense(input_dim, activation='sigmoid')(decoded)
 
 # Model
 autoencoder = models.Model(inputs=input_layer, outputs=output_layer)
 
 # Compile the model
-autoencoder.compile(optimizer='adam', loss='mse')
+autoencoder.compile(optimizer='rmsprop', loss='mse')
 
 
 X_train, X_val = train_test_split(normalized_data, test_size=0.2, random_state=2)
@@ -280,10 +293,10 @@ X_train, X_val = train_test_split(normalized_data, test_size=0.2, random_state=2
 # Train the autoencoder
 history = autoencoder.fit(
     X_train, X_train,  # Input and target are the same for unsupervised learning
-    epochs=50,
-    batch_size=16,
+    epochs=15,
+    batch_size=8,
     validation_data=(X_val, X_val),
-    shuffle=True
+    shuffle=False
 )
 
 
@@ -291,11 +304,11 @@ reconstructed = autoencoder.predict(X_val)
 reconstruction_error = np.mean((X_val - reconstructed) ** 2, axis=1)
 
 # Flag potential anomalies
-threshold = np.percentile(reconstruction_error, 95)  # Define threshold (e.g., 95th percentile)
+threshold = np.percentile(reconstruction_error, 99)  # Define threshold (e.g., 95th percentile)
 anomalies = reconstruction_error > threshold
 
 print(f"Threshold for anomaly detection: {threshold}")
-print(f"Number of anomalies detected: {np.sum(anomalies)}")
+print(f"Number of anomalies detected: {len(anomalies)}")
 
 plt.figure(figsize=(10, 6))
 plt.hist(reconstruction_error, bins=50, color='blue', alpha=0.7)
@@ -443,22 +456,43 @@ def hierarchical_clustering(latent_features):
     plt.show()
 
     # Step 3: Choose the number of clusters (e.g., based on dendrogram)
-    n_clusters = 3  # Adjust this based on your dendrogram
+    n_clusters = 2  # Adjust this based on your dendrogram
     
     # Step 4: Perform Agglomerative Clustering
     hc_model = AgglomerativeClustering(n_clusters=n_clusters, linkage='ward')
     cluster_labels = hc_model.fit_predict(latent_features)
     # Step 5: Plot the cluster assignments in 3D using the highest-variance latent components
     fig = plt.figure(figsize=(10, 8))
-    ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(latent_features[:,0], latent_features[:, 1], latent_features[:, 2], c=cluster_labels)
+    ax = fig.add_subplot(111)
+    ax.scatter(latent_features[:,0], latent_features[:, 1], c=cluster_labels)
     ax.set_xlabel('Latent Component 1')
     ax.set_ylabel('Latent Component 2')
-    ax.set_zlabel('Latent Component 3')
+
     ax.set_title("Hierarchical Clustering Results")
     plt.show()
     
     return cluster_labels
+
+
+
+def gaussian_mixture_clustering(latent_features, n_components=2):
+
+    # Step 1: Fit GMM
+    gmm = GaussianMixture(n_components=n_components, random_state=42)
+    gmm.fit(latent_features)
+    cluster_labels = gmm.predict(latent_features)
+
+    # Step 2: Plot GMM Clustering Results
+    plt.figure(figsize=(10, 8))
+    plt.scatter(latent_features[:, 0], latent_features[:, 1], c=cluster_labels, cmap='viridis', alpha=0.7)
+    plt.colorbar(label='Cluster Label')
+    plt.xlabel('Latent Component 1')
+    plt.ylabel('Latent Component 2')
+    plt.title('Gaussian Mixture Clustering Results')
+    plt.show()
+
+    return cluster_labels
+
 
 
 if __name__ == "__main__":
@@ -472,8 +506,11 @@ if __name__ == "__main__":
 
     # Compare variance
     raw_variance, feature_variance, latent_variance = compare_variance(raw_data, features, latent_features)
-        
-    cluster_assignments = hierarchical_clustering(latent_features)
+
+    scaler = StandardScaler()
+    latent_features_scaled = scaler.fit_transform(latent_features)    
+    cluster_assignments = gaussian_mixture_clustering(latent_features_scaled)
+
     
     # Output cluster assignments
     print("Cluster Assignments for Each Data Point:", cluster_assignments)
