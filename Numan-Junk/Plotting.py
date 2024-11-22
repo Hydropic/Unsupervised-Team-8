@@ -256,10 +256,10 @@ normalized_data = normalizer_minmax.fit_transform(unmixed_heartbeat)
 
 input_dim = min_length  # Number of features
 
-shell3 = 16
-shell2 = 8
-shell1 = 4
-core = 2
+shell3 = 512
+shell2 = 256
+shell1 = 128
+core = 64
 
 seed = 42
 np.random.seed(seed)
@@ -304,7 +304,7 @@ reconstructed = autoencoder.predict(X_val)
 reconstruction_error = np.mean((X_val - reconstructed) ** 2, axis=1)
 
 # Flag potential anomalies
-threshold = np.percentile(reconstruction_error, 99)  # Define threshold (e.g., 95th percentile)
+threshold = np.percentile(reconstruction_error, 95)  # Define threshold (e.g., 95th percentile)
 anomalies = reconstruction_error > threshold
 
 print(f"Threshold for anomaly detection: {threshold}")
@@ -324,13 +324,13 @@ reconstructed = autoencoder.predict(normalized_data)
 reconstruction_error = np.mean((normalized_data - reconstructed) ** 2, axis=1)
 
 # Define the anomaly threshold
-threshold = np.percentile(reconstruction_error, 95)
+threshold = np.percentile(reconstruction_error, 90)
 
 # Get indices of anomalies
 anomalies = np.where(reconstruction_error > threshold)[0]
 
 # Plot some anomalies
-for i, idx in enumerate(anomalies[:5]):  # Plot the first 5 anomalies
+for i, idx in enumerate(anomalies[:10]):  # Plot the first 5 anomalies
     plt.figure(figsize=(10, 6))
     plt.plot(unmixed_heartbeat[idx], label=f"Anomalous Heartbeat {i+1}")
     plt.title(f"Anomalous Heartbeat {i+1}")
