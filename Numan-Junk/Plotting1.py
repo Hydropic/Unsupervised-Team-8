@@ -174,14 +174,14 @@ def Analyse_FFT_Result(frequencies, fft_results,weight_decay_factor = 0.96):
 
 
 
-def IterateoverFiles(Mat_File_count,Plot=0,weight_decay_factor = 0.84,batch_size = 2, path = 'Unsupervised-Team-8/problem-2/data/real-data/'):
+def IterateoverFiles(Mat_File_count,Plot=0,weight_decay_factor = 0.84,batch_size = 2, path = 'Unsupervised-Team-8/problem-2/data/test-data/'):
     heartbeat_mixed = np.empty((4, Mat_File_count+1), dtype=object)
     for i in range(1, Mat_File_count+1, batch_size):
         fig, ax = plt.subplots(batch_size, 2, figsize=(15, 20))
     
         for batch_idx, j in enumerate(range(i, min(i + batch_size, Mat_File_count+1))):
             #path = 'Unsupervised-Team-8/problem-2/data/test-data/'
-            mat_file = load_mat_file(path + f"a{j:02}m.mat")
+            mat_file = load_mat_file(path + f"{j:03}.mat")
             data00 = mat_file['val'].reshape(4, -1)
 
             # Perform ICA

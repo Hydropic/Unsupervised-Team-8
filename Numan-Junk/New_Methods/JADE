@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.decomposition import FastICA
 import math
 
-__path__ = "Unsupervised-Team-8/problem-2/data/real-data/a05m.mat"
+__path__ = "Unsupervised-Team-8/problem-2/data/test-data/000.mat"
 
 mat_file = loadmat(__path__)
 from sklearn.preprocessing import StandardScaler
@@ -89,12 +89,12 @@ def Analyse_FFT_Result(frequencies, fft_results):
         weights = np.array([0 for i in range(frequencies.shape[0])])
         weights[Dominant_freq1] = 1
         reversed_weights = np.array([weight_decay_factor**(i+len(low_freqs)) for i in range(len(high_freqs))])
-        #weighted_low_freqs = low_freqs * weights
+        weighted_low_freqs = low_freqs * weights
         weighted_high_freqs = high_freqs * reversed_weights
-        #temp_sum = np.sum(weighted_low_freqs) + np.sum(weighted_high_freqs)
-        #Sum_of_frequency.append(temp_sum)
-        # Add up the values and print
-        #print(f"Sum of frequency components for channel {i}: {Sum_of_frequency[i]}")
+        temp_sum = np.sum(weighted_low_freqs) + np.sum(weighted_high_freqs)
+        Sum_of_frequency.append(temp_sum)
+        #Add up the values and print
+        print(f"Sum of frequency components for channel {i}: {Sum_of_frequency[i]}")
      
         #print(f"Sum of frequency components for channel {i}: {Sum_of_frequency[i]}")
     #print(len(frequencies))

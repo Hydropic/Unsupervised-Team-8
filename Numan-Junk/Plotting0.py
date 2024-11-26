@@ -6,7 +6,7 @@ from sklearn.decomposition import FastICA
 from sklearn.preprocessing import StandardScaler
 #import mne 
 
-__path__ = 'Unsupervised-Team-8/problem-2/data/test-data/011'
+__path__ = 'Unsupervised-Team-8/problem-2/data/test-data/000'
 
 normalizer = StandardScaler()
 
@@ -121,12 +121,58 @@ def Analyse_FFT_Result(frequencies, fft_results,weight_decay_factor = 0.96):
     return max_index, max_index2
 
 
+mat_file = load_mat_file(__path__)
+
+data00 = mat_file['val'].reshape(4, -1)
+
+print(data00.shape)
+
+fig, ax = plt.subplots(4,1, figsize=(15,10))
+
+
+x = np.linspace(0, data00.shape[1], data00.shape[1])
+
+for i in range(0,4):
+    ax[i].plot(x, data00[i, :], color='blue', label=f'electrode {i}')
+    ax[i].set_xlabel('time (in [s])')
+    ax[i].set_ylabel('heart rate in mV')
+
+ax[0].set_title('Recroding from 000.mat (Test data)')
+
+
+plt.tight_layout()
+plt.show()
+
+# Perform ICA
+ica = FastICA(n_components=4)
+ica_components = ica.fit_transform(data00.T).T
+
+fig, ax = plt.subplots(4, 1, figsize=(15, 10))
+
+x = np.linspace(0, data00.shape[1], data00.shape[1])
+
+for i in range(0, 4):
+    ax[i].plot(x, ica_components[i, :], color='blue', label=f'ICA component {i}')
+    ax[i].set_xlabel('time (in [s])')
+    ax[i].set_ylabel('ICA signal')
+
+ax[0].set_title('ICA Components from 000.mat (Test data)')
+
+plt.tight_layout()
+plt.show()
+
+ica_components, x = Apply_ICA(data00)       
+# Perform FFT on ICA results
+fft_results, frequencies = Apply_FFT(ica_components)
+# Analyze FFT to find max components
+max_index, max_index2 = Analyse_FFT_Result(frequencies,fft_results, weight_decay_factor=0.84)
+# Store max components in heartbeat_mixed array
 
 
 
 
 
-def IterateoverFiles(Mat_File_count,Plot=0,batch_size = 5, path = 'Unsupervised-Team-8/problem-2/data/test-data/',weight_decay_factor = 0.96):
+"""def IterateoverFiles(Mat_File_count,Plot=0,batch_size = 5, path = 'Unsupervised-Team-8/problem-2/data/test-data/',weight_decay_factor = 0.96):
     heartbeat_mixed = np.empty((2, Mat_File_count+1), dtype=object)
     for i in range(0, Mat_File_count+1, batch_size):
         if Plot == 1:
@@ -142,13 +188,8 @@ def IterateoverFiles(Mat_File_count,Plot=0,batch_size = 5, path = 'Unsupervised-
             ica_components, x = Apply_ICA(data00)        
 
             # Perform FFT on ICA results
-            fft_results, frequencies = Apply_FFT(ica_components) 
-
-            # Analyze FFT to find max components
-            max_index, max_index2 = Analyse_FFT_Result(frequencies,fft_results, weight_decay_factor)
-
-            # Store max components in heartbeat_mixed array
-            heartbeat_mixed[0, j] = fix_signal_shape(ica_components[max_index, :])
+            fft_results, frequencies = Apply_FFT(ica_components) heartbeat_mixed[0, j] = fix_signal_shape(ica_components[max_index, :])
+heartbeat_mixed[1, j] = fix_signal_shape(ica_components[max_index2, :])[max_index, :]
             heartbeat_mixed[1, j] = fix_signal_shape(ica_components[max_index2, :])
         if Plot == 1:    
             # Plot ICA components with max_index and max_index2 for the current file
@@ -166,8 +207,8 @@ def IterateoverFiles(Mat_File_count,Plot=0,batch_size = 5, path = 'Unsupervised-
             plt.show()
             print(f"Batch starting at index {i}: Max index: {max_index}, 2nd Max index: {max_index2}")
 
-    return heartbeat_mixed
-heartbeat_mixed = IterateoverFiles(152) 
+    return heartbeat_mixed"""
+#heartbeat_mixed = IterateoverFiles(152) 
 
 from sklearn.decomposition import PCA
 
@@ -229,4 +270,4 @@ def apply_pca_with_elbow(heartbeat_mixed, max_components=306):
 
     return explained_variances
 
-principal_components, explained_variance =  apply_pca_with_elbow(heartbeat_mixed)
+#principal_components, explained_variance =  apply_pca_with_elbow(heartbeat_mixed)

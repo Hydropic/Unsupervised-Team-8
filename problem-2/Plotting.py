@@ -213,7 +213,7 @@ path = 'Unsupervised-Team-8/problem-2/data/test-data/'
 def plot_last():
     for i in range(0, Mat_File_count+1, batch_size):
 
-        fig, ax = plt.subplots(batch_size, 2, figsize=(15, 20))
+        fig, ax = plt.subplots(batch_size, 2, figsize=(15, 10))
         
         for batch_idx, j in enumerate(range(i, min(i + batch_size, 153))):
             #path = 'Unsupervised-Team-8/problem-2/data/test-data/'
@@ -226,13 +226,13 @@ def plot_last():
                 # Plot ICA components with max_index and max_index2 for the current file
             ax[batch_idx, 0].plot(unmixed_heartbeat[j], color='blue')
             ax[batch_idx, 0].scatter(peak_unmixed, unmixed_heartbeat[j][peak_unmixed], color='green')
-            ax[batch_idx, 0].set_title(f'ICA Max Component {batch_idx+1} for File {j:03}')
+            ax[batch_idx, 0].set_title(f'Fetal Heartbeat for File {j:03}')
             ax[batch_idx, 0].set_xlabel('Time')
             ax[batch_idx, 0].set_ylabel(f'Amplitude')
 
             ax[batch_idx, 1].plot(skipped_files[j], color='red')
             ax[batch_idx, 1].scatter(peak_mixed, skipped_files[j][peak_mixed], color='green')
-            ax[batch_idx, 1].set_title(f'ICA 2nd Max Component {batch_idx+1} for File {j:03}')
+            ax[batch_idx, 1].set_title(f'Maternal Heartbeat for File {j:03}')
             ax[batch_idx, 1].set_xlabel('Time')
             ax[batch_idx, 1].set_ylabel(f'Amplitude')
             
@@ -240,6 +240,7 @@ def plot_last():
         plt.show()
 
 
+#
 #plot_last()
 from scipy.signal import butter, filtfilt
 def highpass_filter(data, cutoff=1, fs=360, order=5):
@@ -321,7 +322,7 @@ print(f"Number of anomalies detected: {len(anomalies)}")
 plt.figure(figsize=(10, 6))
 plt.hist(reconstruction_error, bins=50, color='blue', alpha=0.7)
 plt.axvline(x=threshold, color='red', linestyle='--', label='Anomaly Threshold')
-plt.title("Reconstruction Error Distribution")
+plt.title("Reconstruction Error Distribution over the Validation Set")
 plt.xlabel("Reconstruction Error")
 plt.ylabel("Frequency")
 plt.legend()
@@ -332,7 +333,7 @@ reconstructed = autoencoder.predict(normalized_data)
 reconstruction_error = np.mean((normalized_data - reconstructed) ** 2, axis=1)
 
 # Define the anomaly threshold
-threshold = np.percentile(reconstruction_error, 90)
+threshold = np.percentile(reconstruction_error, 95)
 
 # Get indices of anomalies
 anomalies = np.where(reconstruction_error > threshold)[0]
@@ -527,8 +528,9 @@ if __name__ == "__main__":
 
 
 #print(f"Raw variance {raw_variance}, Feature variance {feature_variance},AutoEncoder Variance {latent_variance}, Total Variance {total_variance}")
+unmixed_heartbeat = np.array(unmixed_heartbeat)
 
-"""covariance_matrix = np.cov(unmixed_heartbeat.T)
+covariance_matrix = np.cov(unmixed_heartbeat.T)
 
 fig, ax = plt.subplots(nrows=1, ncols=1)
 plt.title('Covariance matrix')
@@ -543,6 +545,6 @@ plt.ylabel('Eigenvalues size/strength')
 plt.xlabel('number of eigenvalue (sorted by strength)')
 plt.show()
 plt.title('Eigenvalues sorted')
-"""
+
 
 
