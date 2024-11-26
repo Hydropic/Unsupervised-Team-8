@@ -1,0 +1,86 @@
+# The music preferences are encoded by a binary vector per user.
+# They correspond to the following genres (in order):
+Classical
+Folk
+Jazz Hip Hop
+Electro Pop/Electro Rock
+Dancefloor
+Indie Rock/Rock pop
+Singer & Songwriter
+Comedy
+Musicals
+Chill Out/Trip-Hop/Lounge
+Soundtracks
+Disco
+Old school soul
+Rock
+Romantic
+Bluegrass
+Indie Rock
+Contemporary Soul
+Blues
+Old School
+Baroque
+Instrumental jazz
+Urban Cowboy
+Asian Music
+Tropical
+Early Music
+Classic Blues
+Indie Pop
+Bolero
+Spirituality & Religion
+Dancehall/Ragga
+Dance
+R&B
+Pop
+Film Scores
+Grime
+Electro Hip Hop
+Metal
+West Coast
+Acoustic Blues
+Indie Pop/Folk
+International Pop
+Sports
+Trance
+Ska
+Brazilian Music
+Bollywood
+Nursery Rhymes
+Alternative Country
+Indian Music
+TV shows & movies
+Dubstep
+Classical Period
+Chicago Blues
+Vocal jazz
+TV Soundtracks
+Latin Music
+Rock & Roll/Rockabilly
+Delta Blues
+African Music
+Opera
+Ranchera
+Oldschool R&B
+Kids & Family
+Modern
+Soul & Funk
+Electro
+Alternative
+Dub
+Electric Blues
+Rap/Hip Hop
+Techno/House
+Country Blues
+Traditional Country
+Country
+East Coast
+Contemporary R&B
+Jazz
+Game Scores
+Films/Games
+Reggae
+Hard Rock
+Kids
+Dirty South

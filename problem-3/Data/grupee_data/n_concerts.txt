@@ -1,0 +1,85 @@
+# The aggregate number of concerts per genre per year. The concerts are evenly distributed throughout the year.
+Classical:24
+Folk:23
+Jazz Hip Hop:8
+Electro Pop/Electro Rock:24
+Dancefloor:36
+Indie Rock/Rock pop:38
+Singer & Songwriter:30
+Comedy:12
+Musicals:10
+Chill Out/Trip-Hop/Lounge:3
+Soundtracks:0
+Disco:0
+Old school soul:9
+Rock:14
+Romantic:22
+Bluegrass:2
+Indie Rock:25
+Contemporary Soul:9
+Blues:14
+Old School:0
+Baroque:1
+Instrumental jazz:8
+Urban Cowboy:0
+Asian Music:4
+Tropical:0
+Early Music:0
+Classic Blues:9
+Indie Pop:30
+Bolero:1
+Spirituality & Religion:60
+Dancehall/Ragga:10
+Dance:8
+R&B:24
+Pop:29
+Film Scores:0
+Grime:0
+Electro Hip Hop:13
+Metal:15
+West Coast:12
+Acoustic Blues:2
+Indie Pop/Folk:18
+International Pop:40
+Sports:0
+Trance:11
+Ska:0
+Brazilian Music:0
+Bollywood:0
+Nursery Rhymes:0
+Alternative Country:6
+Indian Music:1
+TV shows & movies:0
+Dubstep:22
+Classical Period:0
+Chicago Blues:0
+Vocal jazz:23
+TV Soundtracks:0
+Latin Music:10
+Rock & Roll/Rockabilly:6
+Delta Blues:0
+African Music:4
+Opera:4
+Ranchera:0
+Oldschool R&B:0
+Kids & Family:30
+Modern:0
+Soul & Funk:8
+Electro:20
+Alternative:18
+Dub:22
+Electric Blues:1
+Rap/Hip Hop:28
+Techno/House:29
+Country Blues:13
+Traditional Country:2
+Country:2
+East Coast:13
+Contemporary R&B:27
+Jazz:12
+Game Scores:0
+Films/Games:0
+Reggae:5
+Hard Rock:18
+Kids:3
+Dirty South:0

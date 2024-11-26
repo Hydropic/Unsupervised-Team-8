@@ -1,0 +1,5 @@
+# The following numbers are occasion-counts of two grupee-friends visiting a concert of a certain genre that takes place (out of 1000):
+# The number of people that are not connected on grupee visiting concerts together is negligible.
+Both like the genre: 393
+One likes the genre: 18
+Neither like the genre: 2
