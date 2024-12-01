@@ -51,8 +51,25 @@ def weighted_friendship_vector(user1, user2):
     vector_amplitude = np.sqrt(np.sum(np.square(weighted_vector)))
     return weighted_vector, vector_amplitude
 
-id1 = '83'
-id2 = '8310'
+# Initialize genre popularity array
+genre_popularity = np.zeros(84)
+with alive_bar(len(data), title='Processing Friend IDs') as bar:
+    for user in data: 
+        binary = data[user] # Iterate through the JSON data
+        for index, b in enumerate(binary):  # Enumerate over each binary lis
+            genre_popularity[index] += int(b)
+
+        bar()  # Update the progress bar
+
+# Normalize by the total number of users
+genre_popularity = genre_popularity / len(data)
+
+print(f"Genre popularity: {genre_popularity}")
+print(f"Normalized: {genre_popularity / len(data.keys())}")
+
+n_concerts = {key: value * genre_popularity[index] for index, (key, value) in enumerate(n_concerts.items())}
+
+
 risk_per_id = np.zeros(len(data.keys()))
 with alive_bar(len(friend_pairs), title='Processing Friend IDs') as bar:
     for f_id in friend_pairs: # f_id is a list of two friend ids
@@ -64,7 +81,7 @@ with alive_bar(len(friend_pairs), title='Processing Friend IDs') as bar:
         risk_per_id[int(f_id[1])] = vector_amplitude
 
         bar()   
-        top_percentage = 0.12
+top_percentage = 0.12
 num_top_elements = int(len(risk_per_id) * top_percentage)
 
 # Get the indices of the top elements
@@ -75,4 +92,5 @@ top_values = [risk_per_id[i] for i in top_indices]
 
 print("Top 12% indices:", top_indices)
 print(("Top 12% values:", top_values))
-
+print(n_concerts)
+print(f"Data example: {list(data.items())[:5]}")  # Print the first 5 user entries
