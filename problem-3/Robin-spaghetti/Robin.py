@@ -4,6 +4,9 @@ import json
 import csv
 import numpy as np
 from alive_progress import alive_bar
+from pathlib import Path
+
+CONCERT_POP_FEATURE = False # determines whether to use the concert population as a feature or not
 
 file_path = 'problem-3\\Data\\grupee_data\\n_concerts.txt'
 concerts = graph.read_concerts(file_path)
@@ -46,8 +49,27 @@ with alive_bar(len(friend_pairs), title='Processing Friend IDs') as bar:
         risk_per_id[int(f_id[0])] = [x + y for x, y in zip(risk_per_id[int(f_id[0])], risk_per_id_row)]
         risk_per_id[int(f_id[1])] = [x + y for x, y in zip(risk_per_id[int(f_id[1])], risk_per_id_row)]
         bar()
-# scale the risk per genre of each grupee by the number of concerts per two weeks
-scaled_risk_per_id = [[x * y for x, y in zip(row, concert_per_two_weeks_scaler)] for row in risk_per_id] # theoretically could scale by concerts instead
+
+if CONCERT_POP_FEATURE:
+    # TAKE CONCERT POPULATION AS FEATURE
+    risk_per_id = np.array(risk_per_id)
+    # Sum the elements element-wise to get a 1D array of length 84
+    sum_concert_risk_per_id = np.sum(risk_per_id, axis=0)
+    # Divide each element by 2
+    min_val = np.min(sum_concert_risk_per_id)
+    max_val = np.max(sum_concert_risk_per_id)
+    normalized_sum_concert_risk_per_id = (sum_concert_risk_per_id - min_val) / (max_val - min_val)
+    normalized_sum_concert_risk_per_id.tolist()
+    risk_per_id = [[x * y for x, y in zip(row, normalized_sum_concert_risk_per_id)] for row in risk_per_id] 
+
+# SCALE RISK PER ID BY CONCERTS PER TWO WEEKS    
+concert_per_two_weeks_scaler = np.array(concert_per_two_weeks_scaler)
+min_val = np.min(concert_per_two_weeks_scaler)
+max_val = np.max(concert_per_two_weeks_scaler)
+normalized_concert_per_two_weeks_scaler = (concert_per_two_weeks_scaler - min_val) / (max_val - min_val)
+normalized_concert_per_two_weeks_scaler.tolist()
+scaled_risk_per_id = [[x * y for x, y in zip(row, normalized_concert_per_two_weeks_scaler)] for row in risk_per_id] # theoretically could scale by concerts instead
+
 # Sum the elements of each row in scaled_risk_per_ids_concert
 sum_scaled_risk_per_id = [sum(row) for row in scaled_risk_per_id]
 # Calculate the number of top elements to select (12% of the total length)
@@ -59,6 +81,14 @@ top_indices = np.argsort(sum_scaled_risk_per_id)[-num_top_elements:][::-1]
 
 # Get the values of the top elements
 top_values = [sum_scaled_risk_per_id[i] for i in top_indices]
+
+# Define the file path
+output_file_path = Path('a_team_8.txt')
+
+# Write the top_indices to the file
+with output_file_path.open('w') as file:
+    for index in top_indices:
+        file.write(f"{index}\n")
 
 print("Top 12% indices:", top_indices)
 print("Top 12% values:", top_values)
