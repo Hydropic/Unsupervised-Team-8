@@ -2,6 +2,7 @@ import json
 import numpy as np
 import csv
 from alive_progress import alive_bar
+import time
 # Give weight to Preferences (based on the concert count) -> then based on the preferences with weights, evaluate some value for each friedship-> find top %12 with highest frienship numbers 
 
 ######################################### Import Data #########################################
@@ -48,26 +49,27 @@ def weighted_friendship_vector(user1, user2):
     temp_friendship = friendship_score(user1, user2)
     vector_amplitude = 0
     weighted_vector = np.array([temp_friendship[index] * n_concerts[list(n_concerts.keys())[index]] for index in temp_friendship])
-    vector_amplitude = np.sqrt(np.sum(np.square(weighted_vector)))
+    #vector_amplitude = np.sqrt(np.sum(np.square(weighted_vector)))
+    vector_amplitude = np.sum(weighted_vector)
     return weighted_vector, vector_amplitude
 
 # Initialize genre popularity array
-genre_popularity = np.zeros(84)
-with alive_bar(len(data), title='Processing Friend IDs') as bar:
-    for user in data: 
-        binary = data[user] # Iterate through the JSON data
-        for index, b in enumerate(binary):  # Enumerate over each binary lis
-            genre_popularity[index] += int(b)
+# genre_popularity = np.zeros(84)
+# with alive_bar(len(data), title='Processing Friend IDs') as bar:
+#     for user in data: 
+#         binary = data[user] # Iterate through the JSON data
+#         for index, b in enumerate(binary):  # Enumerate over each binary lis
+#             genre_popularity[index] += int(b)
 
-        bar()  # Update the progress bar
+#         bar()  # Update the progress bar
 
-# Normalize by the total number of users
-genre_popularity = genre_popularity / len(data)
+# # Normalize by the total number of users
+# genre_popularity = genre_popularity / len(data)
 
-print(f"Genre popularity: {genre_popularity}")
-print(f"Normalized: {genre_popularity / len(data.keys())}")
+# print(f"Genre popularity: {genre_popularity}")
+# print(f"Normalized: {genre_popularity / len(data.keys())}")
 
-n_concerts = {key: value * genre_popularity[index] for index, (key, value) in enumerate(n_concerts.items())}
+#n_concerts = {key: value * genre_popularity[index] for index, (key, value) in enumerate(n_concerts.items())}
 
 
 risk_per_id = np.zeros(len(data.keys()))
@@ -77,16 +79,30 @@ with alive_bar(len(friend_pairs), title='Processing Friend IDs') as bar:
 
         weighted_vector, vector_amplitude = weighted_friendship_vector(f_id[0], f_id[1])
         # Element wise addition of the risk per genre
-        risk_per_id[int(f_id[0])] = vector_amplitude
-        risk_per_id[int(f_id[1])] = vector_amplitude
+        risk_per_id[int(f_id[0])] += vector_amplitude
+        risk_per_id[int(f_id[1])] += vector_amplitude
 
         bar()   
+
 top_percentage = 0.12
 num_top_elements = int(len(risk_per_id) * top_percentage)
 
 # Get the indices of the top elements
-top_indices = (np.argsort(risk_per_id))[-num_top_elements:][::-1]
+top_indices = (np.argsort(risk_per_id))[::-1]
+start_time = time.time()
+for i in range(len(risk_per_id)): #len(risk_per_id)):
+    temp_time = time.time()
+    if i!=0:
+        temp = top_indices[i]
+        for f_id in friend_pairs: # f_id is a list of two friend ids
+            if f_id[0] == temp:
+                weighted_vector, vector_amplitude = weighted_friendship_vector(temp, f_id[1])
+                # Element wise addition of the risk per genre
+                risk_per_id[int(f_id[1])] -= vector_amplitude
+        print(f"{i} of {len(risk_per_id)} -*- Time taken to process: {temp_time - start_time} estimated Left: {(len(risk_per_id) - i)*(time.time() - temp_time)} seconds")
+    
 
+top_indices = (np.argsort(risk_per_id))[-num_top_elements:][::-1]
 # Get the values of the top elements
 top_values = [risk_per_id[i] for i in top_indices]
 
