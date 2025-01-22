@@ -31,6 +31,9 @@ def Rand_loc_rot(x):
     elif x == 4: #South
         d_ud = abs(d_ud)*-1
         d_lr = 0
-
+    elif x == 5: #Random
+        d_lr = d_lr*0.01
+        d_ud = d_ud*0.01
+        rot = rot*0.1
     action = [d_lr, d_ud, rot]
     return action
