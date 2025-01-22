@@ -23,27 +23,36 @@ import Rand_loc_rot
 #     print(iter)
 
 def create_test_data(x, i):
-    iter = 0
+    iter = 1    
+    observation_list = []
+    observation_list_2 = []
     while iter <= i & i <= 9999:
         iter += 1
         action = Rand_loc_rot.Rand_loc_rot(x)
         action = np.array(action)
         observation, *_ = env.step(action)
+        observation_list.append(observation[0])
+        observation_list_2.append(observation[2])
         # plt.imshow(observation[0])
         # plt.imshow(observation[1])
         # plt.show()
-        plt.imsave(f'results/Images/img{x}{iter:04}.jpeg', observation[0], cmap=None, format='jpeg')
-        with open(f'results/Location_Rotation_Arrays/img{x}{iter:04}.txt', 'w') as f:
-            f.write(str(observation[2]))
+        #plt.imsave(f'results/Images/img{x}{iter:04}.jpeg', observation[0], cmap=None, format='jpeg')
+        # with open(f'results/Location_Rotation_Arrays/img{x}{iter:04}.txt', 'w') as f:
+        #     f.write(str(observation[2]))
         
         #Reset Location 
-        action = action * -1
-        observation, *_ = env.step(action)
+        if x!= 5:
+            action = action * -1
+            observation, *_ = env.step(action)
         ###### FOR DEBUGGING ######
-        # plt.imsave(f'results/Images/img{x+5}{iter:04}.jpeg', observation[0], cmap=None, format='jpeg')
-        # with open(f'results/Location_Rotation_Arrays/img{x+5}{iter:04}.txt', 'w') as f:
+        # plt.imsave(f'results/Images/img{x+6}{iter:04}.jpeg', observation[0], cmap=None, format='jpeg')
+        # with open(f'results/Location_Rotation_Arrays/img{x+6}{iter:04}.txt', 'w') as f:
         #     f.write(str(observation[2]))
         ###########################
+    array = np.array(observation_list, dtype=np.uint8)
+    np.save(f'results/Images/img{x}{i:04}.npy', array, allow_pickle=True, fix_imports=True)
+    array_2 = np.array(observation_list_2, dtype=np.uint8)
+    np.save(f'results/Location_Rotation_Arrays/img{x}{i:04}.npy', array_2, allow_pickle=True, fix_imports=True)
     if i >= 10000:
         print("Max Number of Iterations is 9999")
         return 0
